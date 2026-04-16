@@ -5,6 +5,8 @@ export class SeedanceApi implements ICredentialType {
 
   displayName = 'Seedance API';
 
+  extends = ['httpHeaderAuth'];
+
   documentationUrl = 'https://www.volcengine.com/docs/82379/1298459';
 
   testedBy = 'seedanceApi';
@@ -19,7 +21,8 @@ export class SeedanceApi implements ICredentialType {
       displayName: 'API Key',
       name: 'apiKey',
       type: 'string',
-      description: 'Volcengine Ark API Key used to authenticate Seedance requests',
+      description:
+        'Reusable Volcengine Ark API Key shared by all Seedance task operations in this node',
       typeOptions: {
         password: true,
       },

@@ -8,7 +8,7 @@ export class Seedance implements INodeType {
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
-    description: 'Create or get a Seedance video generation task',
+    description: 'Seedance task node that reuses one shared API Key credential across operations',
     defaults: {
       name: 'Seedance',
     },
@@ -18,6 +18,7 @@ export class Seedance implements INodeType {
     credentials: [
       {
         name: 'seedanceApi',
+        displayName: 'Seedance API',
         required: true,
         testedBy: 'seedanceApi',
       },
@@ -73,6 +74,7 @@ export class Seedance implements INodeType {
         {
           resource: 'task',
           operation,
+          credentialType: 'seedanceApi',
           status: 'not_implemented',
           message:
             operation === 'create'
