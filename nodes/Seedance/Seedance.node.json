@@ -3,5 +3,17 @@
   "nodeVersion": "1.0",
   "categories": [
     "AI"
-  ]
+  ],
+  "resources": {
+    "credentialDocumentation": [
+      {
+        "url": "https://www.volcengine.com/docs/82379/1298459"
+      }
+    ],
+    "primaryDocumentation": [
+      {
+        "url": "https://www.volcengine.com/docs/82379/1520758"
+      }
+    ]
+  }
 }

@@ -7,8 +7,8 @@ export class Seedance implements INodeType {
     icon: 'file:seedance.svg',
     group: ['transform'],
     version: 1,
-    subtitle: '={{$parameter["operation"]}}',
-    description: 'Seedance video generation task stub for n8n',
+    subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
+    description: 'Create or get a Seedance video generation task',
     defaults: {
       name: 'Seedance',
     },
@@ -22,6 +22,19 @@ export class Seedance implements INodeType {
     ],
     properties: [
       {
+        displayName: 'Resource',
+        name: 'resource',
+        type: 'options',
+        noDataExpression: true,
+        default: 'task',
+        options: [
+          {
+            name: 'Task',
+            value: 'task',
+          },
+        ],
+      },
+      {
         displayName: 'Operation',
         name: 'operation',
         type: 'options',
@@ -31,17 +44,38 @@ export class Seedance implements INodeType {
           {
             name: 'Create Task',
             value: 'create',
+            description: 'Create a text-to-video Seedance task',
           },
           {
             name: 'Get Task',
             value: 'get',
+            description: 'Get a Seedance task by ID',
           },
         ],
+        displayOptions: {
+          show: {
+            resource: ['task'],
+          },
+        },
       },
     ],
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    return [this.helpers.returnJsonArray([{ status: 'not_implemented' }])];
+    const operation = this.getNodeParameter('operation', 0) as string;
+
+    return [
+      this.helpers.returnJsonArray([
+        {
+          resource: 'task',
+          operation,
+          status: 'not_implemented',
+          message:
+            operation === 'create'
+              ? 'Phase 1 stub: create task implementation arrives in a later plan.'
+              : 'Phase 1 stub: get task implementation arrives in a later plan.',
+        },
+      ]),
+    ];
   }
 }
