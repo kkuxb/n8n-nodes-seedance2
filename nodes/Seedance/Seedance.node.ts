@@ -1,7 +1,9 @@
 import type { IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
 
 import { createOperationProperties } from './description/create.operation';
+import { getOperationProperties } from './description/get.operation';
 import { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } from './shared/mappers/createPayload';
+import { mapTaskResponse } from './shared/mappers/task';
 import { normalizeSeedanceError } from './shared/mappers/errors';
 import { getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { seedanceApiRequest } from './shared/transport/request';
@@ -71,6 +73,7 @@ export class Seedance implements INodeType {
 				},
 			},
 			...createOperationProperties,
+			...getOperationProperties,
 		],
 	};
 
@@ -123,14 +126,14 @@ export class Seedance implements INodeType {
 				}
 
 				if (operation === 'get') {
+					const taskId = this.getNodeParameter('taskId', itemIndex) as string;
+					const response = await seedanceApiRequest(this, {
+						method: 'GET',
+						path: getSeedanceOperationEndpoint('getTask').replace('{id}', encodeURIComponent(taskId)),
+					});
+
 					returnData.push({
-						json: {
-							resource: 'task',
-							operation,
-							credentialType: 'seedanceApi',
-							status: 'not_implemented',
-							message: 'Phase 1 stub: get task implementation arrives in Task 2 of plan 01-03.',
-						},
+						json: mapTaskResponse(response as Parameters<typeof mapTaskResponse>[0]),
 						pairedItem: { item: itemIndex },
 					});
 				}
