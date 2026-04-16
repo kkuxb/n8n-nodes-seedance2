@@ -1,0 +1,7 @@
+{
+  "node": "n8n-nodes-seedance2.seedance",
+  "nodeVersion": "1.0",
+  "categories": [
+    "AI"
+  ]
+}
