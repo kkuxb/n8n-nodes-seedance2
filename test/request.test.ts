@@ -1,3 +1,4 @@
+/* eslint-disable @n8n/community-nodes/no-restricted-imports */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 

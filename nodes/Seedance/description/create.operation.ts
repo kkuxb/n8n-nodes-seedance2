@@ -48,12 +48,12 @@ export const createOperationProperties: INodeProperties[] = [
 		type: 'options',
 		default: '16:9',
 		options: [
-			{ name: '16:9', value: '16:9' },
-			{ name: '4:3', value: '4:3' },
 			{ name: '1:1', value: '1:1' },
-			{ name: '3:4', value: '3:4' },
-			{ name: '9:16', value: '9:16' },
+			{ name: '16:9', value: '16:9' },
 			{ name: '21:9', value: '21:9' },
+			{ name: '3:4', value: '3:4' },
+			{ name: '4:3', value: '4:3' },
+			{ name: '9:16', value: '9:16' },
 			{ name: 'Adaptive', value: 'adaptive' },
 		],
 		description: '生成视频宽高比',
@@ -88,7 +88,7 @@ export const createOperationProperties: INodeProperties[] = [
 		name: 'watermark',
 		type: 'boolean',
 		default: false,
-		description: '生成视频是否包含水印',
+		description: 'Whether to include a watermark in the generated video',
 		displayOptions: createDisplayOptions,
 	},
 	{
@@ -116,7 +116,7 @@ export const createOperationProperties: INodeProperties[] = [
 		name: 'returnLastFrame',
 		type: 'boolean',
 		default: false,
-		description: '返回生成视频的尾帧图像 URL（若接口支持）',
+		description: 'Whether to return the generated video last-frame URL when the API supports it',
 		displayOptions: createDisplayOptions,
 	},
 	{
@@ -124,7 +124,7 @@ export const createOperationProperties: INodeProperties[] = [
 		name: 'generateAudio',
 		type: 'boolean',
 		default: true,
-		description: '控制生成的视频是否包含同步音频；仅在支持的模型上生效',
+		description: 'Whether to generate synchronized audio when the selected model supports it',
 		displayOptions: createDisplayOptions,
 	},
 ];
