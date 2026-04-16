@@ -12,12 +12,14 @@ export class Seedance implements INodeType {
     defaults: {
       name: 'Seedance',
     },
+    usableAsTool: true,
     inputs: ['main'],
     outputs: ['main'],
     credentials: [
       {
         name: 'seedanceApi',
         required: true,
+        testedBy: 'seedanceApi',
       },
     ],
     properties: [
@@ -45,11 +47,13 @@ export class Seedance implements INodeType {
             name: 'Create Task',
             value: 'create',
             description: 'Create a text-to-video Seedance task',
+            action: 'Create task a task',
           },
           {
             name: 'Get Task',
             value: 'get',
             description: 'Get a Seedance task by ID',
+            action: 'Get task a task',
           },
         ],
         displayOptions: {
