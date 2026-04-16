@@ -14,18 +14,18 @@ Requirements for the initial release. Each maps to exactly one roadmap phase.
 
 ### Create Task
 
-- [ ] **CRTK-01**: 用户可以通过模型 ID 和文本提示词创建文生视频任务
+- [x] **CRTK-01**: 用户可以通过模型 ID 和文本提示词创建文生视频任务
 - [ ] **CRTK-02**: 用户可以通过首帧图片和可选文本提示词创建首帧图生视频任务
 - [ ] **CRTK-03**: 用户可以通过首帧图片、尾帧图片和可选文本提示词创建首尾帧图生视频任务
-- [ ] **CRTK-04**: 用户可以在创建任务时设置常用生成参数，包括分辨率、宽高比、时长或帧数、种子、水印、服务等级和任务过期时间
-- [ ] **CRTK-05**: 用户可以在适用场景下配置是否返回尾帧以及是否生成音频
-- [ ] **CRTK-06**: 创建任务后节点返回任务 ID、初始状态、创建时间和关键请求摘要，供后续工作流轮询使用
+- [x] **CRTK-04**: 用户可以在创建任务时设置常用生成参数，包括分辨率、宽高比、时长或帧数、种子、水印、服务等级和任务过期时间
+- [x] **CRTK-05**: 用户可以在适用场景下配置是否返回尾帧以及是否生成音频
+- [x] **CRTK-06**: 创建任务后节点返回任务 ID、初始状态、创建时间和关键请求摘要，供后续工作流轮询使用
 
 ### Get Task
 
-- [ ] **GETT-01**: 用户可以通过任务 ID 查询单个视频生成任务的最新状态
-- [ ] **GETT-02**: 查询结果会返回任务状态、错误信息、更新时间、输出视频 URL、尾帧 URL 以及用量信息（若接口返回）
-- [ ] **GETT-03**: 查询结果会提供适合工作流分支判断的状态语义，使用户可以区分终态与非终态
+- [x] **GETT-01**: 用户可以通过任务 ID 查询单个视频生成任务的最新状态
+- [x] **GETT-02**: 查询结果会返回任务状态、错误信息、更新时间、输出视频 URL、尾帧 URL 以及用量信息（若接口返回）
+- [x] **GETT-03**: 查询结果会提供适合工作流分支判断的状态语义，使用户可以区分终态与非终态
 
 ### List Tasks
 
@@ -85,15 +85,15 @@ Which phases cover which requirements. This will be updated during roadmap creat
 |-------------|-------|--------|
 | CRED-01 | Phase 1 | Complete |
 | CRED-02 | Phase 1 | Complete |
-| CRTK-01 | Phase 1 | Pending |
+| CRTK-01 | Phase 1 | Complete |
 | CRTK-02 | Phase 2 | Pending |
 | CRTK-03 | Phase 2 | Pending |
-| CRTK-04 | Phase 1 | Pending |
-| CRTK-05 | Phase 1 | Pending |
-| CRTK-06 | Phase 1 | Pending |
-| GETT-01 | Phase 1 | Pending |
-| GETT-02 | Phase 1 | Pending |
-| GETT-03 | Phase 1 | Pending |
+| CRTK-04 | Phase 1 | Complete |
+| CRTK-05 | Phase 1 | Complete |
+| CRTK-06 | Phase 1 | Complete |
+| GETT-01 | Phase 1 | Complete |
+| GETT-02 | Phase 1 | Complete |
+| GETT-03 | Phase 1 | Complete |
 | LIST-01 | Phase 3 | Pending |
 | LIST-02 | Phase 3 | Pending |
 | LIST-03 | Phase 3 | Pending |
