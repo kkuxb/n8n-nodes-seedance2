@@ -8,6 +8,8 @@ export const SEEDANCE_TASK_GET_ENDPOINT = `/api/v3/contents/generations/tasks`;
 const operationEndpoints: Record<SeedanceOperationKey, string> = {
   createTask: SEEDANCE_TASK_CREATE_ENDPOINT,
   getTask: SEEDANCE_TASK_GET_ENDPOINT,
+  listTasks: '/api/v3/contents/generations/tasks',
+  deleteTask: '/api/v3/contents/generations/tasks',
 };
 
 export function normalizeSeedancePath(path: string): string {

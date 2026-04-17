@@ -9,7 +9,7 @@ import type { SEEDANCE_TASK_STATUSES } from './constants';
 
 export type SeedanceTaskStatus = (typeof SEEDANCE_TASK_STATUSES)[number];
 
-export type SeedanceOperationKey = 'createTask' | 'getTask';
+export type SeedanceOperationKey = 'createTask' | 'getTask' | 'listTasks' | 'deleteTask';
 
 export interface SeedanceCredentialData {
   apiKey: string;
