@@ -13,7 +13,8 @@ export const listOperationProperties: INodeProperties[] = [
 		name: 'returnAll',
 		type: 'boolean',
 		default: true,
-		description: '是否自动拉取所有分页结果。关闭后可指定页码和每页数量。提示：仅支持查询最近 7 天历史。',
+		// eslint-disable-next-line n8n-nodes-base/node-param-description-wrong-for-return-all, n8n-nodes-base/node-param-description-boolean-without-whether
+		description: '是否自动拉取所有分页结果。关闭后可指定页码和每页数量。提示：仅支持查询最近 7 天历史，且视频 URL 默认 24 小时后失效。',
 		displayOptions: listDisplayOptions,
 	},
 	{
@@ -80,6 +81,18 @@ export const listOperationProperties: INodeProperties[] = [
 						value: '',
 					},
 					{
+						name: 'Cancelled',
+						value: 'cancelled',
+					},
+					{
+						name: 'Expired',
+						value: 'expired',
+					},
+					{
+						name: 'Failed',
+						value: 'failed',
+					},
+					{
 						name: 'Queued',
 						value: 'queued',
 					},
@@ -90,18 +103,6 @@ export const listOperationProperties: INodeProperties[] = [
 					{
 						name: 'Succeeded',
 						value: 'succeeded',
-					},
-					{
-						name: 'Failed',
-						value: 'failed',
-					},
-					{
-						name: 'Cancelled',
-						value: 'cancelled',
-					},
-					{
-						name: 'Expired',
-						value: 'expired',
 					},
 				],
 				default: '',

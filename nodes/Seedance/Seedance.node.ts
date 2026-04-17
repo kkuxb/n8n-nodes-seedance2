@@ -19,7 +19,7 @@ export class Seedance implements INodeType {
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] === "create" ? "创建任务" : "查询任务"}}',
-		description: '在 n8n 中创建和查询 Seedance 2.0 文生视频任务',
+		description: '在 n8n 中创建和查询 Seedance 2.0 视频任务。注意：API 仅保留最近 7 天任务，且视频结果 URL 默认仅 24 小时有效，请及时下载转存。',
 		defaults: {
 			name: 'Seedance',
 		},
@@ -243,6 +243,7 @@ export class Seedance implements INodeType {
 						qs.page_num = page_num;
 						qs.page_size = page_size;
 
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						const response = await seedanceApiRequest<{ items?: any[] }>(this, {
 							method: 'GET',
 							path: getSeedanceOperationEndpoint('listTasks'),
