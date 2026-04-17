@@ -47,7 +47,12 @@ Plans:
   2. 用户可以上传首帧图片创建图生任务，也可以同时提供首帧和尾帧图片创建首尾帧约束的视频生成任务。
   3. 当用户传入互斥字段、缺失当前模式必填项或组合明显不合法时，节点会在执行前给出清晰校验错误。
   4. 常用参数在不同创建模式下保持一致的命名和输出摘要，方便用户把多个模式放进同一条工作流里复用。
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [x] 02-01-PLAN.md — 图生创建模式 UI 字段设计
+- [x] 02-02-PLAN.md — 图生创建模式运行时执行逻辑
+- [x] 02-03-PLAN.md — 补齐图片二进制文件格式与大小护栏
 **UI hint**: yes
 **Notes/Risks**:
 - 该阶段只补齐 v1 高频输入模式；多参考图/视频/音频、Draft 和 Raw JSON 逃生口继续后置。
@@ -75,7 +80,7 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. 凭证接入与文生查询闭环 | 0/TBD | Not started | - |
-| 2. 图生创建模式与参数护栏 | 0/TBD | Not started | - |
+| 2. 图生创建模式与参数护栏 | 2/3 | In progress | - |
 | 3. 任务检索与生命周期控制 | 0/TBD | Not started | - |
 
 ## Deferred Beyond v1
