@@ -115,7 +115,7 @@ export class Seedance implements INodeType {
 							const binaryProp = this.getNodeParameter('firstFrameBinaryProperty', itemIndex, 'data') as string;
 							this.helpers.assertBinaryData(itemIndex, binaryProp);
 							
-							const itemBinary = this.getInputData()[itemIndex].binary?.[binaryProp];
+							const itemBinary = items[itemIndex].binary?.[binaryProp];
 							const mimeType = itemBinary?.mimeType ?? '';
 							const supportedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
 							
@@ -148,7 +148,7 @@ export class Seedance implements INodeType {
 							const binaryProp = this.getNodeParameter('lastFrameBinaryProperty', itemIndex, 'data') as string;
 							this.helpers.assertBinaryData(itemIndex, binaryProp);
 							
-							const itemBinary = this.getInputData()[itemIndex].binary?.[binaryProp];
+							const itemBinary = items[itemIndex].binary?.[binaryProp];
 							const mimeType = itemBinary?.mimeType ?? '';
 							const supportedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
 							
