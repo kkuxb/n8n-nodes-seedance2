@@ -1,6 +1,6 @@
 import type { IDataObject } from 'n8n-workflow';
 
-import type { SeedanceCreateInput, SeedanceImageInput } from '../validators/create';
+import type { SeedanceCreateInput } from '../validators/create';
 import { validateCreateInput } from '../validators/create';
 
 export interface SeedanceCreateRequestSummary extends IDataObject {
