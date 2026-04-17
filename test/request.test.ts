@@ -21,7 +21,7 @@ test('从 apiKey 构造 Bearer 鉴权头', () => {
 
 test('端点 helper 暴露 Phase 1 create/get path', () => {
   assert.equal(getSeedanceOperationEndpoint('createTask'), '/api/v3/contents/generations/tasks');
-  assert.equal(getSeedanceOperationEndpoint('getTask'), '/api/v3/contents/generations/tasks/{id}');
+  assert.equal(getSeedanceOperationEndpoint('getTask'), '/api/v3/contents/generations/tasks');
   assert.equal(normalizeSeedancePath('api/v3/contents/generations/tasks'), '/api/v3/contents/generations/tasks');
   assert.equal(
     buildSeedanceEndpointUrl(getSeedanceOperationEndpoint('createTask'), SEEDANCE_BASE_URL),
@@ -49,17 +49,17 @@ test('request options 复用共享 header 与 url 构造', () => {
     },
     {
       method: 'GET',
-      path: getSeedanceOperationEndpoint('getTask').replace('{id}', 'task_123'),
-      qs: { verbose: true },
+      path: getSeedanceOperationEndpoint('getTask'),
+      qs: { id: 'task_123' },
     },
   );
 
-  assert.equal(options.url, 'https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks/task_123');
+  assert.equal(options.url, 'https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks');
   assert.deepEqual(options.headers, {
     Authorization: 'Bearer secret-key',
     'Content-Type': 'application/json',
   });
-  assert.deepEqual(options.qs, { verbose: true });
+  assert.deepEqual(options.qs, { id: 'task_123' });
 });
 
 test('错误归一化优先读取 response.body.error 中的 code 与 message', () => {

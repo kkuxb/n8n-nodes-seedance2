@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData, INodeType, INodeTypeDescription } from 'n8n-workflow';
 
 import { createOperationProperties } from './description/create.operation';
 import { getOperationProperties } from './description/get.operation';
@@ -7,69 +7,69 @@ import { mapTaskResponse } from './shared/mappers/task';
 import { normalizeSeedanceError } from './shared/mappers/errors';
 import { getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { seedanceApiRequest } from './shared/transport/request';
-import type { SeedanceCreateInput } from './shared/validators/create';
+import type { SeedanceCreateInput, SeedanceImageInput } from './shared/validators/create';
 
 export class Seedance implements INodeType {
-  description: INodeTypeDescription = {
-    displayName: 'Seedance',
-    name: 'seedance',
-    icon: 'file:seedance.svg',
-    group: ['transform'],
-    version: 1,
-    subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
-    description: 'Seedance task node that reuses one shared API Key credential across operations',
-    defaults: {
-      name: 'Seedance',
-    },
-    usableAsTool: true,
-    inputs: ['main'],
-    outputs: ['main'],
-    credentials: [
-      {
-        name: 'seedanceApi',
-        displayName: 'Seedance API',
-        required: true,
-        testedBy: 'seedanceApi',
-      },
-    ],
+	description: INodeTypeDescription = {
+		displayName: 'Seedance',
+		name: 'seedance',
+		icon: 'file:seedance.svg',
+		group: ['transform'],
+		version: 1,
+		subtitle: '={{$parameter["operation"] === "create" ? "创建任务" : "查询任务"}}',
+		description: '在 n8n 中创建和查询 Seedance 2.0 文生视频任务',
+		defaults: {
+			name: 'Seedance',
+		},
+		usableAsTool: true,
+		inputs: ['main'],
+		outputs: ['main'],
+		credentials: [
+			{
+				name: 'seedanceApi',
+				displayName: 'Seedance 凭证',
+				required: true,
+				testedBy: 'seedanceApi',
+			},
+		],
 		properties: [
 			{
-        displayName: 'Resource',
-        name: 'resource',
-        type: 'options',
-        noDataExpression: true,
-        default: 'task',
-        options: [
-          {
-            name: 'Task',
-            value: 'task',
-          },
-        ],
-      },
-      {
-        displayName: 'Operation',
-        name: 'operation',
-        type: 'options',
-        noDataExpression: true,
-        default: 'create',
-        options: [
-          {
-            name: 'Create Task',
-            value: 'create',
-            description: 'Create a text-to-video Seedance task',
-            action: 'Create task a task',
-          },
-          {
-            name: 'Get Task',
-            value: 'get',
-            description: 'Get a Seedance task by ID',
-            action: 'Get task a task',
-          },
-        ],
-        displayOptions: {
-          show: {
-            resource: ['task'],
-          },
+				displayName: '资源',
+				name: 'resource',
+				type: 'options',
+				noDataExpression: true,
+				default: 'task',
+				options: [
+					{
+						name: '任务',
+						value: 'task',
+					},
+				],
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				default: 'create',
+				options: [
+					{
+						name: '创建任务',
+						value: 'create',
+						description: '创建 Seedance 2.0 文生视频任务',
+						action: '创建视频生成任务',
+					},
+					{
+						name: '查询任务',
+						value: 'get',
+						description: '根据任务 ID 查询 Seedance 任务状态',
+						action: '查询视频生成任务',
+					},
+				],
+				displayOptions: {
+					show: {
+						resource: ['task'],
+					},
 				},
 			},
 			...createOperationProperties,
@@ -86,28 +86,68 @@ export class Seedance implements INodeType {
 
 			try {
 				if (operation === 'create') {
+					const advancedOptions = this.getNodeParameter('advancedOptions', itemIndex, {}) as IDataObject;
+
+					const createMode = this.getNodeParameter('createMode', itemIndex, 't2v') as 't2v' | 'i2v_first' | 'i2v_first_last';
 					const createInput: SeedanceCreateInput = {
+						createMode,
 						model: this.getNodeParameter('model', itemIndex) as string,
-						prompt: this.getNodeParameter('prompt', itemIndex) as string,
+						prompt: this.getNodeParameter('prompt', itemIndex, '') as string,
 						resolution: this.getNodeParameter('resolution', itemIndex) as string,
 						ratio: this.getNodeParameter('ratio', itemIndex) as string,
-						seed: this.getNodeParameter('seed', itemIndex) as number,
-						watermark: this.getNodeParameter('watermark', itemIndex) as boolean,
-						serviceTier: this.getNodeParameter('serviceTier', itemIndex) as string,
-						executionExpiresAfter: this.getNodeParameter('executionExpiresAfter', itemIndex) as number,
-						returnLastFrame: this.getNodeParameter('returnLastFrame', itemIndex) as boolean,
+						seed: (advancedOptions.seed as number | undefined) ?? -1,
+						watermark: (advancedOptions.watermark as boolean | undefined) ?? false,
+						executionExpiresAfter:
+							(advancedOptions.executionExpiresAfter as number | undefined) ?? 172800,
+						returnLastFrame:
+							(advancedOptions.returnLastFrame as boolean | undefined) ?? false,
 						generateAudio: this.getNodeParameter('generateAudio', itemIndex) as boolean,
 					};
 
-					const durationValue = this.getNodeParameter('duration', itemIndex) as number | '';
-					const framesValue = this.getNodeParameter('frames', itemIndex) as number | '';
-
-					if (durationValue !== '') {
-						createInput.duration = durationValue;
+					if (createMode === 'i2v_first' || createMode === 'i2v_first_last') {
+						const inputMethod = this.getNodeParameter('firstFrameInputMethod', itemIndex, 'url') as string;
+						if (inputMethod === 'url') {
+							createInput.firstFrameImage = {
+								type: 'url',
+								data: this.getNodeParameter('firstFrameImageUrl', itemIndex) as string,
+							};
+						} else if (inputMethod === 'binary') {
+							const binaryProp = this.getNodeParameter('firstFrameBinaryProperty', itemIndex, 'data') as string;
+							this.helpers.assertBinaryData(itemIndex, binaryProp);
+							const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+							const itemBinary = this.getInputData()[itemIndex].binary?.[binaryProp];
+							createInput.firstFrameImage = {
+								type: 'binary',
+								data: binaryData.toString('base64'),
+								mimeType: itemBinary?.mimeType ?? 'image/jpeg',
+							};
+						}
 					}
 
-					if (framesValue !== '') {
-						createInput.frames = framesValue;
+					if (createMode === 'i2v_first_last') {
+						const inputMethod = this.getNodeParameter('lastFrameInputMethod', itemIndex, 'url') as string;
+						if (inputMethod === 'url') {
+							createInput.lastFrameImage = {
+								type: 'url',
+								data: this.getNodeParameter('lastFrameImageUrl', itemIndex) as string,
+							};
+						} else if (inputMethod === 'binary') {
+							const binaryProp = this.getNodeParameter('lastFrameBinaryProperty', itemIndex, 'data') as string;
+							this.helpers.assertBinaryData(itemIndex, binaryProp);
+							const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+							const itemBinary = this.getInputData()[itemIndex].binary?.[binaryProp];
+							createInput.lastFrameImage = {
+								type: 'binary',
+								data: binaryData.toString('base64'),
+								mimeType: itemBinary?.mimeType ?? 'image/jpeg',
+							};
+						}
+					}
+
+					const durationValue = this.getNodeParameter('duration', itemIndex) as number;
+
+					if (typeof durationValue === 'number' && Number.isFinite(durationValue)) {
+						createInput.duration = durationValue;
 					}
 
 					const payload = buildCreatePayload(createInput);
@@ -129,7 +169,8 @@ export class Seedance implements INodeType {
 					const taskId = this.getNodeParameter('taskId', itemIndex) as string;
 					const response = await seedanceApiRequest(this, {
 						method: 'GET',
-						path: getSeedanceOperationEndpoint('getTask').replace('{id}', encodeURIComponent(taskId)),
+						path: getSeedanceOperationEndpoint('getTask'),
+						qs: { id: taskId },
 					});
 
 					returnData.push({

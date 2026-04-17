@@ -1,18 +1,16 @@
 import type { IDataObject } from 'n8n-workflow';
 
-import type { SeedanceCreateInput } from '../validators/create';
+import type { SeedanceCreateInput, SeedanceImageInput } from '../validators/create';
 import { validateCreateInput } from '../validators/create';
 
 export interface SeedanceCreateRequestSummary extends IDataObject {
 	model: string;
-	prompt: string;
+	prompt?: string;
 	resolution?: string;
 	ratio?: string;
 	duration?: number;
-	frames?: number;
 	seed?: number;
 	watermark?: boolean;
-	serviceTier?: string;
 	executionExpiresAfter?: number;
 	returnLastFrame?: boolean;
 	generateAudio?: boolean;
@@ -29,23 +27,49 @@ export interface SeedanceCreateResponse {
 export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
 	validateCreateInput(input);
 
+	const content: Array<IDataObject> = [];
+	
+	if (typeof input.prompt === 'string' && input.prompt.trim() !== '') {
+		content.push({
+			type: 'text',
+			text: input.prompt,
+		});
+	}
+
+	if (input.firstFrameImage && input.firstFrameImage.data.trim() !== '') {
+		const url = input.firstFrameImage.type === 'binary' 
+			? `data:${input.firstFrameImage.mimeType};base64,${input.firstFrameImage.data}`
+			: input.firstFrameImage.data;
+		
+		content.push({
+			type: 'image_url',
+			role: 'first_frame',
+			image_url: { url },
+		});
+	}
+
+	if (input.lastFrameImage && input.lastFrameImage.data.trim() !== '') {
+		const url = input.lastFrameImage.type === 'binary' 
+			? `data:${input.lastFrameImage.mimeType};base64,${input.lastFrameImage.data}`
+			: input.lastFrameImage.data;
+		
+		content.push({
+			type: 'image_url',
+			role: 'last_frame',
+			image_url: { url },
+		});
+	}
+
 	const payload: IDataObject = {
 		model: input.model,
-		content: [
-			{
-				type: 'text',
-				text: input.prompt,
-			},
-		],
+		content,
 	};
 
 	if (input.resolution) payload.resolution = input.resolution;
 	if (input.ratio) payload.ratio = input.ratio;
 	if (typeof input.duration === 'number') payload.duration = input.duration;
-	if (typeof input.frames === 'number') payload.frames = input.frames;
 	if (typeof input.seed === 'number') payload.seed = input.seed;
 	if (typeof input.watermark === 'boolean') payload.watermark = input.watermark;
-	if (input.serviceTier) payload.service_tier = input.serviceTier;
 	if (typeof input.executionExpiresAfter === 'number') {
 		payload.execution_expires_after = input.executionExpiresAfter;
 	}
@@ -64,10 +88,8 @@ export function buildCreateRequestSummary(input: SeedanceCreateInput): SeedanceC
 		...(input.resolution ? { resolution: input.resolution } : {}),
 		...(input.ratio ? { ratio: input.ratio } : {}),
 		...(typeof input.duration === 'number' ? { duration: input.duration } : {}),
-		...(typeof input.frames === 'number' ? { frames: input.frames } : {}),
 		...(typeof input.seed === 'number' ? { seed: input.seed } : {}),
 		...(typeof input.watermark === 'boolean' ? { watermark: input.watermark } : {}),
-		...(input.serviceTier ? { serviceTier: input.serviceTier } : {}),
 		...(typeof input.executionExpiresAfter === 'number'
 			? { executionExpiresAfter: input.executionExpiresAfter }
 			: {}),

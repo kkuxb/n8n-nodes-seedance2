@@ -9,12 +9,12 @@ const getDisplayOptions = {
 
 export const getOperationProperties: INodeProperties[] = [
 	{
-		displayName: 'Task ID',
+		displayName: '任务 ID',
 		name: 'taskId',
 		type: 'string',
 		default: '',
 		required: true,
-		description: '需要查询的 Seedance 任务 ID（仅支持最近 7 天历史）',
+		description: '请输入需要查询的任务 ID。仅支持查询最近 7 天内的任务',
 		displayOptions: getDisplayOptions,
 	},
 ];

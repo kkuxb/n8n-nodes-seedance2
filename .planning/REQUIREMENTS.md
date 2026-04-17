@@ -59,7 +59,9 @@ Deferred to future release. Tracked but not included in the current roadmap.
 
 - **AUTO-01**: 用户可以在单个操作中提交任务并轮询直到完成或失败
 - **AUTO-02**: 用户可以在任务成功后直接获得 binary 视频输出而不仅是临时 URL
-- **AUTO-03**: 用户可以通过节点直接配置回调驱动模式并与 n8n webhook 工作流衔接
+- **AUTO-04**: 如果后续不再引入除 task 外的其他资源类型，移除节点顶部的 `资源 / Resource` 下拉框以简化配置
+- **AUTO-05**: 实现智能轮询功能（submit-and-wait）：创建任务后节点自动进行轮询直至终态
+- **AUTO-06**: 在智能轮询模式下提供“自动下载视频”开关，成功后自动将 video_url 转存并输出 binary 文件
 
 ### Extended Controls
 

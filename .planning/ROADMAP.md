@@ -27,7 +27,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. 用户可以使用模型 ID、文本提示词和常用生成参数提交文生视频任务，并立即拿到可用于后续轮询的任务元数据。
   3. 用户可以通过任务 ID 查询最新任务状态，并在 n8n 工作流中直接分辨任务是否仍在处理中或已经进入终态。
   4. 用户在任务成功时可以拿到视频 URL、可选尾帧 URL 与用量信息；任务失败时可以拿到明确错误信息而不是模糊失败。
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+- [x] 01-01-PLAN.md — Package skeleton and single Seedance credential/node registration
+- [x] 01-02-PLAN.md — Shared credential-driven transport, endpoints, and error normalization
+- [x] 01-03-PLAN.md — Text-to-video create and single-task get operations with mapper coverage
+- [x] 01-04-PLAN.md — Gap closure for frames-only create and query-string get-task contracts
 **Notes/Risks**:
 - Phase 1 只覆盖文生主路径，不在首阶段引入复杂图片组合与原始 `content` 拼装。
 - `return_last_frame` 与 `generate_audio` 仅在 API 明确支持的场景下暴露，避免先开放再回收。

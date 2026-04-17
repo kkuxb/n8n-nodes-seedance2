@@ -3,7 +3,7 @@ import type { SeedanceOperationKey } from '../types';
 
 export const SEEDANCE_TASK_CREATE_ENDPOINT = `/api/v3/contents/generations/tasks`;
 
-export const SEEDANCE_TASK_GET_ENDPOINT = `/api/v3/contents/generations/tasks/{id}`;
+export const SEEDANCE_TASK_GET_ENDPOINT = `/api/v3/contents/generations/tasks`;
 
 const operationEndpoints: Record<SeedanceOperationKey, string> = {
   createTask: SEEDANCE_TASK_CREATE_ENDPOINT,
