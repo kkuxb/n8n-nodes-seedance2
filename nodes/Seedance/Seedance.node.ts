@@ -2,6 +2,8 @@ import { NodeOperationError, type IDataObject, type IExecuteFunctions, type INod
 
 import { createOperationProperties } from './description/create.operation';
 import { getOperationProperties } from './description/get.operation';
+import { listOperationProperties } from './description/list.operation';
+import { deleteOperationProperties } from './description/delete.operation';
 import { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } from './shared/mappers/createPayload';
 import { mapTaskResponse } from './shared/mappers/task';
 import { normalizeSeedanceError } from './shared/mappers/errors';
@@ -65,6 +67,18 @@ export class Seedance implements INodeType {
 						description: '根据任务 ID 查询 Seedance 任务状态',
 						action: '查询视频生成任务',
 					},
+					{
+						name: '获取任务列表',
+						value: 'list',
+						description: '获取最近 7 天内的任务列表',
+						action: '获取视频生成任务列表',
+					},
+					{
+						name: '取消 / 删除任务',
+						value: 'delete',
+						description: '取消排队中任务或删除已结束记录',
+						action: '取消或删除任务',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -74,6 +88,8 @@ export class Seedance implements INodeType {
 			},
 			...createOperationProperties,
 			...getOperationProperties,
+			...listOperationProperties,
+			...deleteOperationProperties,
 		],
 	};
 
