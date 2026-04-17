@@ -81,6 +81,30 @@ export class Seedance implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
+		const processBinaryImage = async (itemIndex: number, binaryProp: string) => {
+			this.helpers.assertBinaryData(itemIndex, binaryProp);
+			
+			const itemBinary = items[itemIndex].binary?.[binaryProp];
+			const mimeType = itemBinary?.mimeType ?? '';
+			const supportedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
+			
+			if (!supportedMimeTypes.includes(mimeType)) {
+				throw new NodeOperationError(this.getNode(), '不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff 或 gif。', { itemIndex });
+			}
+
+			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+			
+			if (binaryData.length > 30 * 1024 * 1024) {
+				throw new NodeOperationError(this.getNode(), '图片大小超出 30MB 限制。', { itemIndex });
+			}
+
+			return {
+				type: 'binary' as const,
+				data: binaryData.toString('base64'),
+				mimeType,
+			};
+		};
+
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const operation = this.getNodeParameter('operation', itemIndex) as string;
 
@@ -113,27 +137,7 @@ export class Seedance implements INodeType {
 							};
 						} else if (inputMethod === 'binary') {
 							const binaryProp = this.getNodeParameter('firstFrameBinaryProperty', itemIndex, 'data') as string;
-							this.helpers.assertBinaryData(itemIndex, binaryProp);
-							
-							const itemBinary = items[itemIndex].binary?.[binaryProp];
-							const mimeType = itemBinary?.mimeType ?? '';
-							const supportedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
-							
-							if (!supportedMimeTypes.includes(mimeType)) {
-								throw new NodeOperationError(this.getNode(), '不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff 或 gif。', { itemIndex });
-							}
-
-							const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
-							
-							if (binaryData.length > 30 * 1024 * 1024) {
-								throw new NodeOperationError(this.getNode(), '图片大小超出 30MB 限制。', { itemIndex });
-							}
-
-							createInput.firstFrameImage = {
-								type: 'binary',
-								data: binaryData.toString('base64'),
-								mimeType,
-							};
+							createInput.firstFrameImage = await processBinaryImage(itemIndex, binaryProp);
 						}
 					}
 
@@ -146,27 +150,7 @@ export class Seedance implements INodeType {
 							};
 						} else if (inputMethod === 'binary') {
 							const binaryProp = this.getNodeParameter('lastFrameBinaryProperty', itemIndex, 'data') as string;
-							this.helpers.assertBinaryData(itemIndex, binaryProp);
-							
-							const itemBinary = items[itemIndex].binary?.[binaryProp];
-							const mimeType = itemBinary?.mimeType ?? '';
-							const supportedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
-							
-							if (!supportedMimeTypes.includes(mimeType)) {
-								throw new NodeOperationError(this.getNode(), '不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff 或 gif。', { itemIndex });
-							}
-
-							const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
-							
-							if (binaryData.length > 30 * 1024 * 1024) {
-								throw new NodeOperationError(this.getNode(), '图片大小超出 30MB 限制。', { itemIndex });
-							}
-
-							createInput.lastFrameImage = {
-								type: 'binary',
-								data: binaryData.toString('base64'),
-								mimeType,
-							};
+							createInput.lastFrameImage = await processBinaryImage(itemIndex, binaryProp);
 						}
 					}
 
