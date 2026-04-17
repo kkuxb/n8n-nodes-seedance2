@@ -203,6 +203,87 @@ export class Seedance implements INodeType {
 						json: mapTaskResponse(response as Parameters<typeof mapTaskResponse>[0]),
 						pairedItem: { item: itemIndex },
 					});
+					
+					continue;
+				}
+
+				if (operation === 'list') {
+					const returnAll = this.getNodeParameter('returnAll', itemIndex, true) as boolean;
+					const additionalFields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
+
+					const qs: IDataObject = {};
+
+					if (additionalFields.status) {
+						qs['filter.status'] = additionalFields.status;
+					}
+					if (additionalFields.taskIds) {
+						qs['filter.task_ids'] = (additionalFields.taskIds as string)
+							.split(',')
+							.map((id) => id.trim())
+							.filter((id) => id.length > 0);
+					}
+					if (additionalFields.model) {
+						qs['filter.model'] = additionalFields.model;
+					}
+					if (additionalFields.serviceTier) {
+						qs['filter.service_tier'] = additionalFields.serviceTier;
+					}
+
+					let page_num = 1;
+					const page_size = returnAll ? 100 : (this.getNodeParameter('pageSize', itemIndex, 20) as number);
+
+					if (!returnAll) {
+						page_num = this.getNodeParameter('pageNum', itemIndex, 1) as number;
+					}
+
+					let loop = true;
+					let safetyCounter = 0;
+
+					while (loop && safetyCounter < 10) {
+						qs.page_num = page_num;
+						qs.page_size = page_size;
+
+						const response = await seedanceApiRequest<{ items?: any[] }>(this, {
+							method: 'GET',
+							path: getSeedanceOperationEndpoint('listTasks'),
+							qs,
+						});
+
+						const tasks = response.items || [];
+						for (const task of tasks) {
+							returnData.push({
+								json: mapTaskResponse(task),
+								pairedItem: { item: itemIndex },
+							});
+						}
+
+						if (!returnAll || tasks.length < page_size) {
+							loop = false;
+						} else {
+							page_num++;
+						}
+
+						safetyCounter++;
+					}
+
+					continue;
+				}
+
+				if (operation === 'delete') {
+					const taskId = this.getNodeParameter('taskId', itemIndex) as string;
+					
+					await seedanceApiRequest(this, {
+						method: 'DELETE',
+						path: getSeedanceOperationEndpoint('deleteTask'),
+						qs: { id: taskId },
+					});
+
+					returnData.push({
+						json: { success: true, taskId, action: 'deleted_or_cancelled' },
+						pairedItem: { item: itemIndex },
+					});
+
+					continue;
 				}
 			} catch (error) {
 				const normalized = normalizeSeedanceError(error);
