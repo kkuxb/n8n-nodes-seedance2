@@ -200,7 +200,7 @@ export const createOperationProperties: INodeProperties[] = [
 		name: 'generateAudio',
 		type: 'boolean',
 		default: true,
-		description: 'Whether 生成音频。Seedance 2.0 系列支持有声或无声视频',
+		description: '生成音频。Seedance 2.0 系列支持有声或无声视频',
 		displayOptions: createDisplayOptions,
 	},
 	{
@@ -223,14 +223,14 @@ export const createOperationProperties: INodeProperties[] = [
 				name: 'watermark',
 				type: 'boolean',
 				default: false,
-				description: 'Whether 为生成视频添加水印',
+				description: '为生成视频添加水印',
 			},
 			{
 				displayName: '返回尾帧图',
 				name: 'returnLastFrame',
 				type: 'boolean',
 				default: false,
-				description: 'Whether 在任务查询结果中返回生成视频的尾帧图地址',
+				description: '在任务查询结果中返回生成视频的尾帧图地址',
 			},
 			{
 				displayName: '任务超时时间',
