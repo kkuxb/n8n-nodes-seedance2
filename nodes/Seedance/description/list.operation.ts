@@ -14,7 +14,7 @@ export const listOperationProperties: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		// eslint-disable-next-line n8n-nodes-base/node-param-description-wrong-for-return-all, n8n-nodes-base/node-param-description-boolean-without-whether
-		description: '是否自动拉取所有分页结果。关闭后可指定页码和每页数量。提示：仅支持查询最近 7 天历史，且视频 URL 默认 24 小时后失效。',
+		description: '是否自动拉取所有分页结果。列表操作现在每个输入只返回 1 个 item，请从 json.tasks 读取任务数组。关闭后可指定页码和每页数量。提示：仅支持查询最近 7 天历史，且视频 URL 默认 24 小时后失效。',
 		displayOptions: listDisplayOptions,
 	},
 	{

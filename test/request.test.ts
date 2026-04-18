@@ -8,7 +8,7 @@ const endpointsModule = await import('../dist/nodes/Seedance/shared/transport/en
 const requestModule = await import('../dist/nodes/Seedance/shared/transport/request.js');
 
 const { SEEDANCE_AUTH_HEADER, SEEDANCE_BASE_URL, SEEDANCE_TASK_STATUSES } = constantsModule;
-const { normalizeSeedanceError } = errorsModule;
+const { normalizeSeedanceError, getFriendlyDeleteError } = errorsModule;
 const { buildSeedanceEndpointUrl, getSeedanceOperationEndpoint, normalizeSeedancePath } = endpointsModule;
 const { buildSeedanceAuthHeaders, buildSeedanceHttpRequestOptions } = requestModule;
 
@@ -117,4 +117,45 @@ test('错误归一化可回退到扁平 body 与原始 message', () => {
 
   assert.equal(networkError.code, 'Error');
   assert.equal(networkError.message, 'socket hang up');
+});
+
+test('删除错误提示会友好化常见 invalid action 场景', () => {
+  const normalized = normalizeSeedanceError({
+    response: {
+      statusCode: 400,
+      body: {
+        error: {
+          code: 'BadRequest',
+          message: 'The specified action /api/v3/contents/generations/tasks is invalid',
+        },
+      },
+    },
+  });
+
+  const friendly = getFriendlyDeleteError(normalized, 'task_123');
+
+  assert.match(friendly.message, /DELETE/);
+  assert.match(friendly.message, /task_123/);
+  assert.match(friendly.message, /取消或删除/);
+});
+
+test('删除错误提示会覆盖不支持状态与历史记录缺失场景', () => {
+  const running = getFriendlyDeleteError(
+    normalizeSeedanceError({ statusCode: 400, body: { code: 'INVALID_STATE', message: 'running task cannot be deleted' } }),
+    'task_running',
+  );
+  assert.match(running.message, /running|运行中/);
+
+  const missing = getFriendlyDeleteError(
+    normalizeSeedanceError({ statusCode: 404, body: { code: 'NOT_FOUND', message: 'task not found' } }),
+    'task_missing',
+  );
+  assert.match(missing.message, /task_missing/);
+  assert.match(missing.message, /7 天/);
+
+  const malformed = getFriendlyDeleteError(
+    normalizeSeedanceError({ statusCode: 400, body: { code: 'INVALID_ARGUMENT', message: 'invalid task id format' } }),
+    'bad id',
+  );
+  assert.match(malformed.message, /Task ID/);
 });

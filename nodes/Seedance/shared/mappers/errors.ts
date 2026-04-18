@@ -11,6 +11,43 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return undefined;
 }
 
+export function getFriendlyDeleteError(
+	error: SeedanceApiErrorShape,
+	taskId: string,
+): SeedanceApiErrorShape {
+	const message = error.message.toLowerCase();
+
+	if (message.includes('specified action') || message.includes('/api/v3/contents/generations/tasks')) {
+		return {
+			...error,
+			message: `无法取消或删除任务 ${taskId}。当前已按官方要求发送 DELETE /api/v3/contents/generations/tasks?id=${taskId}，但 Seedance 返回了无效 action 响应，请稍后重试或检查该任务是否仍可取消或删除。`,
+		};
+	}
+
+	if (message.includes('running') || message.includes('cancelled') || message.includes('invalid_state')) {
+		return {
+			...error,
+			message: `任务 ${taskId} 当前状态不支持 DELETE。Seedance 仅支持取消 queued 任务，或删除 succeeded / failed / expired 记录；running 与 cancelled 状态不可删除。`,
+		};
+	}
+
+	if (message.includes('not found') || error.statusCode === 404) {
+		return {
+			...error,
+			message: `未找到任务 ${taskId}。请确认 Task ID 正确，并注意 Seedance 仅支持查询最近 7 天内的任务历史。`,
+		};
+	}
+
+	if (message.includes('invalid task id') || message.includes('invalid id') || message.includes('invalid_argument')) {
+		return {
+			...error,
+			message: `Task ID 格式无效：${taskId}。请提供有效的 Seedance 任务 ID 后重试。`,
+		};
+	}
+
+	return error;
+}
+
 export function normalizeSeedanceError(error: unknown): SeedanceApiErrorShape {
   const raw = error;
   const errorRecord = asRecord(error);
