@@ -5,8 +5,8 @@ import { getOperationProperties } from './description/get.operation';
 import { listOperationProperties } from './description/list.operation';
 import { deleteOperationProperties } from './description/delete.operation';
 import { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } from './shared/mappers/createPayload';
-import { mapTaskResponse } from './shared/mappers/task';
-import { normalizeSeedanceError } from './shared/mappers/errors';
+import { buildAggregatedListOutput, mapTaskResponse, selectSingleTaskResponse } from './shared/mappers/task';
+import { getFriendlyDeleteError, normalizeSeedanceError } from './shared/mappers/errors';
 import { getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { seedanceApiRequest } from './shared/transport/request';
 import type { SeedanceCreateInput } from './shared/validators/create';
@@ -123,6 +123,7 @@ export class Seedance implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const operation = this.getNodeParameter('operation', itemIndex) as string;
+            const node = this.getNode();
 
 			try {
 				if (operation === 'create') {
@@ -199,8 +200,18 @@ export class Seedance implements INodeType {
 						qs: { id: taskId },
 					});
 
+					let taskResponse;
+					try {
+						taskResponse = selectSingleTaskResponse(
+							response as Parameters<typeof selectSingleTaskResponse>[0],
+							taskId,
+						);
+					} catch (error) {
+						throw new NodeOperationError(node, (error as Error).message, { itemIndex });
+					}
+
 					returnData.push({
-						json: mapTaskResponse(response as Parameters<typeof mapTaskResponse>[0]),
+						json: mapTaskResponse(taskResponse),
 						pairedItem: { item: itemIndex },
 					});
 					
@@ -238,6 +249,7 @@ export class Seedance implements INodeType {
 
 					let loop = true;
 					let safetyCounter = 0;
+					const aggregatedTasks = [] as Parameters<typeof mapTaskResponse>[0][];
 
 					while (loop && safetyCounter < 10) {
 						qs.page_num = page_num;
@@ -252,10 +264,7 @@ export class Seedance implements INodeType {
 
 						const tasks = response.items || [];
 						for (const task of tasks) {
-							returnData.push({
-								json: mapTaskResponse(task),
-								pairedItem: { item: itemIndex },
-							});
+							aggregatedTasks.push(task);
 						}
 
 						if (!returnAll || tasks.length < page_size) {
@@ -266,6 +275,16 @@ export class Seedance implements INodeType {
 
 						safetyCounter++;
 					}
+
+					returnData.push(
+						buildAggregatedListOutput({
+							tasks: aggregatedTasks,
+							returnAll,
+							pageNum: returnAll ? 1 : page_num,
+							pageSize: page_size,
+							itemIndex,
+						}),
+					);
 
 					continue;
 				}
@@ -280,14 +299,24 @@ export class Seedance implements INodeType {
 					});
 
 					returnData.push({
-						json: { success: true, taskId, action: 'deleted_or_cancelled' },
+						json: {
+							success: true,
+							taskId,
+							action: 'deleted_or_cancelled',
+							message: '已向 Seedance 提交取消或删除请求。实际结果取决于任务当前状态。',
+						},
 						pairedItem: { item: itemIndex },
 					});
 
 					continue;
 				}
 			} catch (error) {
-				const normalized = normalizeSeedanceError(error);
+				let normalized = normalizeSeedanceError(error);
+
+				if (operation === 'delete') {
+					const taskId = this.getNodeParameter('taskId', itemIndex, '') as string;
+					normalized = getFriendlyDeleteError(normalized, taskId);
+				}
 
 				if (this.continueOnFail()) {
 					returnData.push({
