@@ -62,6 +62,25 @@ test('request options 复用共享 header 与 url 构造', () => {
   assert.deepEqual(options.qs, { id: 'task_123' });
 });
 
+test('DELETE 请求仍使用官方 tasks 路径与 query string id', () => {
+  const options = buildSeedanceHttpRequestOptions(
+    {
+      apiKey: 'secret-key',
+      baseUrl: SEEDANCE_BASE_URL,
+      headers: buildSeedanceAuthHeaders('secret-key'),
+    },
+    {
+      method: 'DELETE',
+      path: getSeedanceOperationEndpoint('deleteTask'),
+      qs: { id: 'task_123' },
+    },
+  );
+
+  assert.equal(options.method, 'DELETE');
+  assert.equal(options.url, 'https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks');
+  assert.deepEqual(options.qs, { id: 'task_123' });
+});
+
 test('错误归一化优先读取 response.body.error 中的 code 与 message', () => {
   const normalized = normalizeSeedanceError({
     response: {
