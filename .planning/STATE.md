@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v1.1
 milestone_name: milestone
-status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-17T16:15:29.922Z"
-last_activity: 2026-04-17
+status: ready
+stopped_at: Completed 05-02 and phase 05 verification
+last_updated: "2026-04-18T15:30:00Z"
+last_activity: 2026-04-18 -- Phase 05 complete, ready for Phase 06 planning
 progress:
   total_phases: 3
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
@@ -18,25 +18,25 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-16)
+See: .planning/PROJECT.md (updated 2026-04-18)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance 视频生成的完整任务生命周期。
-**Current focus:** Phase 03 — 任务检索与生命周期控制
+**Current focus:** Phase 06 — auto-downloading-&-error-handling
 
 ## Current Position
 
-Phase: 03
+Phase: 06
 Plan: Not started
-Status: Executing Phase 03
-Last activity: 2026-04-17
+Status: Ready for planning
+Last activity: 2026-04-18 -- Phase 05 complete, ready for Phase 06 planning
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████░] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 0 min
 - Total execution time: 0.0 hours
 
@@ -44,38 +44,21 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1-3 | 0 | 0 min | - |
-| 01 | 4 | - | - |
-| 2 | 2 | - | - |
-| 02 | 3 | - | - |
+| 1-3 | 10 | 0 min | - |
+| 04 | 1 | - | - |
+| 05 | 2 | - | - |
 
 **Recent Trend:**
 
-- Last 5 plans: none
 - Trend: Stable
-
-| Phase 01-credentials-t2v-get P01 | 39min | 3 tasks | 12 files |
-| Phase 01-credentials-t2v-get P02 | 32min | 3 tasks | 8 files |
-| Phase 01-credentials-t2v-get P03 | 45min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Phase 1] 先以“凭证 + 文生创建 + 单任务查询”作为起步闭环，而不是只搭空骨架。
-- [Phase 2] 高频创建模式仅覆盖文生、首帧图生、首尾帧图生，不在 v1 主路径暴露原始 `content`。
-- [Phase 3] DELETE 统一按“取消或删除任务”建模，保留状态敏感语义，避免误导。
-- [Phase 01-credentials-t2v-get]: Phase 1 package skeleton stays programmatic-style with exactly one node and one shared credential.
-- [Phase 01-credentials-t2v-get]: Phase 1 credentials expose only API Key and defer extra connection options.
-- [Phase 01-credentials-t2v-get]: README must surface 7-day history and 24-hour asset URL limits from the first deliverable.
-- [Phase 01-credentials-t2v-get]: Phase 1 transport uses exactly one shared seedanceApi credential path for all HTTP requests.
-- [Phase 01-credentials-t2v-get]: Seedance API and network failures normalize to code/message/statusCode/raw before operation mappers are added.
-- [Phase 01-credentials-t2v-get]: Phase 1 create operation only supports text-to-video and builds content[type=text] internally instead of exposing raw content arrays.
-- [Phase 01-credentials-t2v-get]: Task status mapping preserves raw API data while lifting n8n workflow booleans isTerminal, isSuccess, isFailure, and shouldPoll to top-level fields.
-- [Phase 01-credentials-t2v-get]: Retention guidance is surfaced in both README and get-task output metadata so users see 7-day task history and 24-hour asset URL limits.
+- Coarse granularity adopted: grouping UI, logic, and error handling for features into single phases.
+- Polling implemented natively without external dependencies, relying on n8n primitives.
+- Wait mode stays inside Get Task with a default-on toggle; timeout input is validated at runtime before polling starts.
 
 ### Pending Todos
 
@@ -83,13 +66,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1] 需在实现前再次确认 API Key header 具体格式与最终 endpoint path/version。
-- [Phase 2] 需核实模型能力矩阵、图片模式互斥规则与参数暴露边界。
-- [Phase 3] 需验证 `filter.task_ids` 的重复 query 序列化方式，以及 DELETE 可用状态集合。
-- [Cross-phase] 必须持续强调最近 7 天历史限制与 24 小时 URL 时效，避免输出契约误导。
+- None yet. Watch out for memory constraints when processing large video binary data in Phase 06.
 
 ## Session Continuity
 
-Last session: 2026-04-17T14:42:08.380Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-任务检索与生命周期控制/03-CONTEXT.md
+Last session: 2026-04-18T15:30:00Z
+Stopped at: Completed 05-02 and phase 05 verification
+Resume file: .planning/phases/06-auto-downloading-&-error-handling/

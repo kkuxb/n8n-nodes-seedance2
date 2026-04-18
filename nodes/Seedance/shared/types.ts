@@ -47,6 +47,13 @@ export interface SeedanceApiErrorPayload {
   [key: string]: unknown;
 }
 
+export interface SeedanceVideoDownloadResult {
+  data: string;
+  mimeType: string;
+  fileName: string;
+  fileExtension: string;
+}
+
 export type SeedanceRequestFunctions = Pick<
   IExecuteFunctions,
   'getCredentials' | 'helpers'

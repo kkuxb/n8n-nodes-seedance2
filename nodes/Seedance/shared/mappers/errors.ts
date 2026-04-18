@@ -2,6 +2,7 @@ import type { SeedanceApiErrorPayload, SeedanceApiErrorShape } from '../types';
 
 const FALLBACK_ERROR_CODE = 'SEEDANCE_REQUEST_FAILED';
 const FALLBACK_ERROR_MESSAGE = 'Seedance request failed';
+const DOWNLOAD_EXPIRY_NOTE = 'Seedance 视频 URL 通常仅在 24 hours 内有效，请尽快下载并保存。';
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   if (typeof value === 'object' && value !== null) {
@@ -20,7 +21,7 @@ export function getFriendlyDeleteError(
 	if (message.includes('specified action') || message.includes('/api/v3/contents/generations/tasks')) {
 		return {
 			...error,
-			message: `无法取消或删除任务 ${taskId}。当前已按官方要求发送 DELETE /api/v3/contents/generations/tasks?id=${taskId}，但 Seedance 返回了无效 action 响应，请稍后重试或检查该任务是否仍可取消或删除。`,
+			message: `无法取消或删除任务 ${taskId}。当前已按官方要求发送 DELETE /api/v3/contents/generations/tasks/${taskId}，但 Seedance 返回了无效 action 响应，请稍后重试或检查该任务是否仍可取消或删除。`,
 		};
 	}
 
@@ -80,4 +81,22 @@ export function normalizeSeedanceError(error: unknown): SeedanceApiErrorShape {
     ...(statusCode !== undefined ? { statusCode } : {}),
     raw,
   };
+}
+
+export function normalizeSeedanceDownloadError(error: unknown): Error {
+	const normalized = normalizeSeedanceError(error);
+	const message = normalized.message;
+	const lowered = message.toLowerCase();
+	const looksExpired =
+		normalized.statusCode === 403 ||
+		normalized.statusCode === 404 ||
+		lowered.includes('expired') ||
+		lowered.includes('expire') ||
+		lowered.includes('not found') ||
+		lowered.includes('unavailable') ||
+		lowered.includes('forbidden') ||
+		lowered.includes('invalid url') ||
+		lowered.includes('no such key');
+
+	return new Error(looksExpired ? `${message} ${DOWNLOAD_EXPIRY_NOTE}` : message);
 }

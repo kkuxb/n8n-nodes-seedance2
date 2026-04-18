@@ -8,9 +8,9 @@ const endpointsModule = await import('../dist/nodes/Seedance/shared/transport/en
 const requestModule = await import('../dist/nodes/Seedance/shared/transport/request.js');
 
 const { SEEDANCE_AUTH_HEADER, SEEDANCE_BASE_URL, SEEDANCE_TASK_STATUSES } = constantsModule;
-const { normalizeSeedanceError, getFriendlyDeleteError } = errorsModule;
-const { buildSeedanceEndpointUrl, getSeedanceOperationEndpoint, normalizeSeedancePath } = endpointsModule;
-const { buildSeedanceAuthHeaders, buildSeedanceHttpRequestOptions } = requestModule;
+const { normalizeSeedanceError, getFriendlyDeleteError, normalizeSeedanceDownloadError } = errorsModule;
+const { buildSeedanceEndpointUrl, getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint, normalizeSeedancePath } = endpointsModule;
+const { buildSeedanceAuthHeaders, buildSeedanceHttpRequestOptions, downloadSeedanceVideo } = requestModule;
 
 test('从 apiKey 构造 Bearer 鉴权头', () => {
   const headers = buildSeedanceAuthHeaders('secret-key');
@@ -62,7 +62,7 @@ test('request options 复用共享 header 与 url 构造', () => {
   assert.deepEqual(options.qs, { id: 'task_123' });
 });
 
-test('DELETE 请求仍使用官方 tasks 路径与 query string id', () => {
+test('DELETE 请求使用官方 tasks/{id} 路径', () => {
   const options = buildSeedanceHttpRequestOptions(
     {
       apiKey: 'secret-key',
@@ -71,14 +71,13 @@ test('DELETE 请求仍使用官方 tasks 路径与 query string id', () => {
     },
     {
       method: 'DELETE',
-      path: getSeedanceOperationEndpoint('deleteTask'),
-      qs: { id: 'task_123' },
+      path: getSeedanceDeleteTaskEndpoint('task_123'),
     },
   );
 
   assert.equal(options.method, 'DELETE');
-  assert.equal(options.url, 'https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks');
-  assert.deepEqual(options.qs, { id: 'task_123' });
+  assert.equal(options.url, 'https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks/task_123');
+  assert.equal(options.qs, undefined);
 });
 
 test('错误归一化优先读取 response.body.error 中的 code 与 message', () => {
@@ -137,6 +136,7 @@ test('删除错误提示会友好化常见 invalid action 场景', () => {
   assert.match(friendly.message, /DELETE/);
   assert.match(friendly.message, /task_123/);
   assert.match(friendly.message, /取消或删除/);
+  assert.match(friendly.message, /tasks\/task_123/);
 });
 
 test('删除错误提示会覆盖不支持状态与历史记录缺失场景', () => {
@@ -158,4 +158,48 @@ test('删除错误提示会覆盖不支持状态与历史记录缺失场景', ()
     'bad id',
   );
   assert.match(malformed.message, /Task ID/);
+});
+
+test('下载错误提示保留原始信息并追加 24 hours 提示', () => {
+	const downloadError = normalizeSeedanceDownloadError({
+		response: {
+			statusCode: 404,
+			body: {
+				error: {
+					code: 'NotFound',
+					message: 'video asset not found',
+				},
+			},
+		},
+	});
+
+	assert.match(downloadError.message, /video asset not found/);
+	assert.match(downloadError.message, /24 hours/);
+});
+
+test('视频下载 helper 返回 binary-ready 结构', async () => {
+	const result = await downloadSeedanceVideo(
+		{
+			async getCredentials() {
+				return { apiKey: 'test-api-key' };
+			},
+			helpers: {
+				async httpRequest() {
+					return {
+						body: Buffer.from('video-bytes'),
+						headers: {
+							'content-type': 'video/mp4',
+						},
+					};
+				},
+			},
+		} as never,
+		'https://example.com/task_123.mp4',
+		'task_123',
+	);
+
+	assert.equal(result.mimeType, 'video/mp4');
+	assert.equal(result.fileName, 'task_123.mp4');
+	assert.equal(result.fileExtension, 'mp4');
+	assert.equal(result.data, Buffer.from('video-bytes').toString('base64'));
 });
