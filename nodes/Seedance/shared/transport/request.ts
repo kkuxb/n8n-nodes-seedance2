@@ -108,7 +108,6 @@ export async function downloadSeedanceVideo(
 		return {
 			data: body.toString('base64'),
 			mimeType,
-			fileExtension,
 			fileName: `${safeTaskId}.${fileExtension}`,
 		};
 	} catch (error) {

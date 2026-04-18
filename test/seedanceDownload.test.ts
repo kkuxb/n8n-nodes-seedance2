@@ -29,7 +29,6 @@ test('succeeded 下载返回可挂到 binary.video 的结构', async () => {
 
 	assert.equal(result.mimeType, 'video/mp4');
 	assert.equal(result.fileName, 'task_success.mp4');
-	assert.equal(result.fileExtension, 'mp4');
 	assert.equal(result.data, Buffer.from('seedance-video-content').toString('base64'));
 });
 

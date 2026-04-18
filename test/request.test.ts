@@ -200,6 +200,5 @@ test('视频下载 helper 返回 binary-ready 结构', async () => {
 
 	assert.equal(result.mimeType, 'video/mp4');
 	assert.equal(result.fileName, 'task_123.mp4');
-	assert.equal(result.fileExtension, 'mp4');
 	assert.equal(result.data, Buffer.from('video-bytes').toString('base64'));
 });

@@ -51,7 +51,6 @@ export interface SeedanceVideoDownloadResult {
   data: string;
   mimeType: string;
   fileName: string;
-  fileExtension: string;
 }
 
 export type SeedanceRequestFunctions = Pick<

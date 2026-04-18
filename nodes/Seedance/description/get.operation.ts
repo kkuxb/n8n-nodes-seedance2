@@ -2,7 +2,6 @@ import type { INodeProperties } from 'n8n-workflow';
 
 const getDisplayOptions = {
 	show: {
-		resource: ['task'],
 		operation: ['get'],
 	},
 };
@@ -23,7 +22,7 @@ export const getOperationProperties: INodeProperties[] = [
 		type: 'boolean',
 		default: true,
 		description:
-			'默认开启。启用后节点会每 20 秒查询一次，最多等待 20 分钟；轮询期间会阻塞当前执行，直到任务进入终态或超时。',
+			'Whether 默认开启等待模式。启用后节点会每 20 秒查询一次，最多等待 20 分钟；轮询期间会阻塞当前执行，直到任务进入终态或超时。',
 		displayOptions: getDisplayOptions,
 	},
 	{
@@ -37,6 +36,19 @@ export const getOperationProperties: INodeProperties[] = [
 		},
 		description:
 			'等待模式下，节点会每 20 秒重新查询一次；超过这里设置的分钟数后返回当前最新任务状态，而不是无限等待。默认 20 分钟。',
+		displayOptions: {
+			show: {
+				...getDisplayOptions.show,
+				waitForCompletion: [true],
+			},
+		},
+	},
+	{
+		displayName: '下载视频',
+		name: 'downloadVideo',
+		type: 'boolean',
+		default: false,
+		description: '仅在等待任务成功完成后下载视频，并将结果附加到 binary.video。',
 		displayOptions: {
 			show: {
 				...getDisplayOptions.show,

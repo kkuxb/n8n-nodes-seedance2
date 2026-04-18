@@ -136,11 +136,21 @@ test('节点描述公开 waitForCompletion 与 waitTimeoutMinutes 参数', () =>
 	const properties = seedanceNode.description.properties as Array<Record<string, unknown>>;
 	const waitForCompletion = properties.find((property) => property.name === 'waitForCompletion');
 	const waitTimeoutMinutes = properties.find((property) => property.name === 'waitTimeoutMinutes');
+	const downloadVideo = properties.find((property) => property.name === 'downloadVideo');
 
 	assert.ok(waitForCompletion);
 	assert.ok(waitTimeoutMinutes);
+	assert.ok(downloadVideo);
 	assert.equal(waitForCompletion?.default, true);
 	assert.equal(waitTimeoutMinutes?.default, 20);
+	assert.equal(downloadVideo?.default, false);
 	assert.match(String(waitForCompletion?.description), /20 秒/);
 	assert.match(String(waitTimeoutMinutes?.description), /20 分钟/);
+	assert.match(String(downloadVideo?.description), /binary\.video/);
+	assert.deepEqual(downloadVideo?.displayOptions, {
+		show: {
+			operation: ['get'],
+			waitForCompletion: [true],
+		},
+	});
 });

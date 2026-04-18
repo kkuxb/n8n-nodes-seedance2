@@ -8,15 +8,15 @@ import { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } from
 import { buildAggregatedListOutput, mapTaskResponse, selectSingleTaskResponse } from './shared/mappers/task';
 import { getFriendlyDeleteError, normalizeSeedanceError } from './shared/mappers/errors';
 import { pollTaskUntilSettled } from './shared/polling/getTaskPolling';
-import { getSeedanceOperationEndpoint } from './shared/transport/endpoints';
-import { seedanceApiRequest } from './shared/transport/request';
+import { getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint } from './shared/transport/endpoints';
+import { downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
 import type { SeedanceCreateInput } from './shared/validators/create';
 
 export class Seedance implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Seedance',
 		name: 'seedance',
-		icon: 'file:seedance.svg',
+		icon: 'file:seedance.png',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] === "create" ? "创建任务" : "查询任务"}}',
@@ -36,19 +36,6 @@ export class Seedance implements INodeType {
 			},
 		],
 		properties: [
-			{
-				displayName: '资源',
-				name: 'resource',
-				type: 'options',
-				noDataExpression: true,
-				default: 'task',
-				options: [
-					{
-						name: '任务',
-						value: 'task',
-					},
-				],
-			},
 			{
 				displayName: '操作',
 				name: 'operation',
@@ -81,11 +68,6 @@ export class Seedance implements INodeType {
 						action: '取消或删除任务',
 					},
 				],
-				displayOptions: {
-					show: {
-						resource: ['task'],
-					},
-				},
 			},
 			...createOperationProperties,
 			...getOperationProperties,
@@ -198,6 +180,7 @@ export class Seedance implements INodeType {
 					const waitForCompletion = this.getNodeParameter('waitForCompletion', itemIndex, true) as boolean;
 
 					if (waitForCompletion === true) {
+						const downloadVideo = this.getNodeParameter('downloadVideo', itemIndex, false) as boolean;
 						const waitTimeoutMinutes = Number(
 							this.getNodeParameter('waitTimeoutMinutes', itemIndex, 20),
 						);
@@ -210,13 +193,33 @@ export class Seedance implements INodeType {
 							);
 						}
 
-						returnData.push({
-							json: await pollTaskUntilSettled(this, {
+						const taskResult = await pollTaskUntilSettled(this, {
 								taskId,
 								timeoutMs: waitTimeoutMinutes * 60_000,
-							}),
+							});
+
+						const executionData: INodeExecutionData = {
+							json: taskResult,
 							pairedItem: { item: itemIndex },
-						});
+						};
+
+						if (
+							downloadVideo === true &&
+							taskResult.status === 'succeeded' &&
+							typeof taskResult.videoUrl === 'string' &&
+							taskResult.videoUrl !== ''
+						) {
+							const videoBinary = await downloadSeedanceVideo(this, taskResult.videoUrl, taskId);
+							executionData.binary = {
+								video: {
+									data: videoBinary.data,
+									mimeType: videoBinary.mimeType,
+									fileName: videoBinary.fileName,
+								},
+							};
+						}
+
+						returnData.push(executionData);
 
 						continue;
 					}
@@ -321,8 +324,7 @@ export class Seedance implements INodeType {
 					
 					await seedanceApiRequest(this, {
 						method: 'DELETE',
-						path: getSeedanceOperationEndpoint('deleteTask'),
-						qs: { id: taskId },
+						path: getSeedanceDeleteTaskEndpoint(taskId),
 					});
 
 					returnData.push({
