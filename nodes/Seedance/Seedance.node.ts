@@ -198,7 +198,17 @@ export class Seedance implements INodeType {
 					const waitForCompletion = this.getNodeParameter('waitForCompletion', itemIndex, true) as boolean;
 
 					if (waitForCompletion === true) {
-						const waitTimeoutMinutes = this.getNodeParameter('waitTimeoutMinutes', itemIndex, 20) as number;
+						const waitTimeoutMinutes = Number(
+							this.getNodeParameter('waitTimeoutMinutes', itemIndex, 20),
+						);
+
+						if (!Number.isFinite(waitTimeoutMinutes) || waitTimeoutMinutes < 1) {
+							throw new NodeOperationError(
+								node,
+								'最长等待时间必须是大于等于 1 的有限分钟数。',
+								{ itemIndex },
+							);
+						}
 
 						returnData.push({
 							json: await pollTaskUntilSettled(this, {

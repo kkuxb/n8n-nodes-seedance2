@@ -10,9 +10,9 @@ import {
 	type SeedanceTaskResponse,
 	type SeedanceTaskWaitMetadata,
 } from '../mappers/task';
-	import { getSeedanceOperationEndpoint } from '../transport/endpoints';
-	import { seedanceApiRequest } from '../transport/request';
-	import type { SeedanceRequestFunctions } from '../types';
+import { getSeedanceOperationEndpoint } from '../transport/endpoints';
+import { seedanceApiRequest } from '../transport/request';
+import type { SeedanceRequestFunctions } from '../types';
 
 export const GET_TASK_POLL_INTERVAL_MS = 20_000;
 
@@ -34,6 +34,10 @@ export async function pollTaskUntilSettled(
 	executor: SeedanceRequestFunctions,
 	options: PollTaskUntilSettledOptions,
 ): Promise<IDataObject & SeedanceTaskWaitMetadata> {
+	if (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0) {
+		throw new Error('Polling timeoutMs must be a positive finite number.');
+	}
+
 	const now = options.now ?? Date.now;
 	const sleep = options.sleep ?? defaultSleep;
 	const startedAt = now();

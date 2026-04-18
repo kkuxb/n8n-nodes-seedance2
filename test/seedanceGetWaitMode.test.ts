@@ -104,6 +104,33 @@ test('waitForCompletion=true 时走等待分支并返回轮询元数据', async 
 	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
 });
 
+test('waitForCompletion=true 时非法 timeout 会立即抛出可读错误', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			operation: 'get',
+			taskId: 'task_invalid_timeout',
+			waitForCompletion: true,
+			waitTimeoutMinutes: Number.NaN,
+		},
+		[{ id: 'task_invalid_timeout', status: 'queued' }],
+	);
+
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String(
+				(error as { message?: unknown; description?: unknown }).message ??
+					(error as { description?: unknown }).description ??
+					error,
+			);
+			assert.match(message, /最长等待时间必须是大于等于 1 的有限分钟数/);
+			return true;
+		},
+	);
+
+	assert.equal(calls.length, 0);
+});
+
 test('节点描述公开 waitForCompletion 与 waitTimeoutMinutes 参数', () => {
 	const seedanceNode = new Seedance();
 	const properties = seedanceNode.description.properties as Array<Record<string, unknown>>;
