@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 const taskMapperModule = await import('../dist/nodes/Seedance/shared/mappers/task.js');
 
-const { mapTaskResponse, selectSingleTaskResponse, buildAggregatedListOutput } = taskMapperModule;
+const { mapTaskResponse, selectSingleTaskResponse, buildAggregatedListOutput, appendTaskWaitMetadata } = taskMapperModule;
 
 const allStatuses = [
 	['queued', false, false, false, true],
@@ -121,6 +121,34 @@ test('单任务响应保持既有映射字段契约', () => {
 	assert.equal(mapped.shouldPoll, false);
 	assert.match((mapped.retention as { message: string }).message, /7 天/);
 	assert.ok(mapped.raw);
+});
+
+test('等待元数据以 additive 方式追加且保留既有任务映射键', () => {
+	const mapped = mapTaskResponse({
+		id: 'task_wait',
+		status: 'running',
+		created_at: 1710000000,
+	});
+	const originalKeys = Object.keys(mapped);
+
+	const withWaitMetadata = appendTaskWaitMetadata(mapped, {
+		timedOut: false,
+		pollCount: 2,
+		waitedMs: 20_000,
+	});
+
+	for (const key of originalKeys) {
+		assert.equal(Object.prototype.hasOwnProperty.call(withWaitMetadata, key), true, `missing original key ${key}`);
+		assert.deepEqual(withWaitMetadata[key], mapped[key]);
+	}
+
+	assert.equal(withWaitMetadata.timedOut, false);
+	assert.equal(withWaitMetadata.pollCount, 2);
+	assert.equal(withWaitMetadata.waitedMs, 20_000);
+	assert.deepEqual(
+		Object.keys(withWaitMetadata).slice(originalKeys.length),
+		['timedOut', 'pollCount', 'waitedMs'],
+	);
 });
 
 test('列表响应按 taskId 提取唯一匹配任务', () => {

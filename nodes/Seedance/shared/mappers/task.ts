@@ -44,6 +44,12 @@ export interface AggregatedListOutputOptions {
 	itemIndex: number;
 }
 
+export interface SeedanceTaskWaitMetadata extends IDataObject {
+	timedOut: boolean;
+	pollCount: number;
+	waitedMs: number;
+}
+
 const retention = {
 	taskHistoryDays: 7,
 	assetUrlHours: 24,
@@ -86,6 +92,18 @@ export function buildAggregatedListOutput(
 			retention,
 		},
 		pairedItem: { item: options.itemIndex },
+	};
+}
+
+export function appendTaskWaitMetadata(
+	task: IDataObject,
+	metadata: SeedanceTaskWaitMetadata,
+): IDataObject & SeedanceTaskWaitMetadata {
+	return {
+		...task,
+		timedOut: metadata.timedOut,
+		pollCount: metadata.pollCount,
+		waitedMs: metadata.waitedMs,
 	};
 }
 
