@@ -1,5 +1,3 @@
-import { setTimeout as defaultSleep } from 'node:timers/promises';
-
 import type { IDataObject } from 'n8n-workflow';
 
 import {
@@ -21,6 +19,12 @@ export interface PollTaskUntilSettledOptions {
 	timeoutMs: number;
 	now?: () => number;
 	sleep?: (intervalMs: number) => Promise<void>;
+}
+
+function defaultSleep(intervalMs: number): Promise<void> {
+	return new Promise((resolve) => {
+		setTimeout(resolve, intervalMs);
+	});
 }
 
 function buildWaitResult(

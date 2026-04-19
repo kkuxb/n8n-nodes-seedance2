@@ -48,7 +48,7 @@ export const getOperationProperties: INodeProperties[] = [
 		name: 'downloadVideo',
 		type: 'boolean',
 		default: false,
-		description: '仅在等待任务成功完成后下载视频，并将结果附加到 binary.video。',
+		description: 'Whether to download the video after the waited task succeeds and attach it to binary.video.',
 		displayOptions: {
 			show: {
 				...getDisplayOptions.show,

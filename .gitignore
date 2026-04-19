@@ -4,6 +4,9 @@
 # Local AI assistant instructions
 AGENTS.md
 
+# Local API reference files
+APIdocs/
+
 # Dependencies and build output
 node_modules/
 dist/

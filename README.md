@@ -1,30 +1,276 @@
 # n8n-nodes-seedance2
 
-用于在 n8n 中接入 Seedance 视频生成任务生命周期的社区节点包。
+用于在 n8n 中接入火山引擎 Seedance 视频生成任务生命周期的社区节点包。
 
-## 当前范围
+当前实现已经覆盖一条可用的任务生命周期闭环：创建任务、查询任务、获取任务列表，以及按任务状态取消或删除任务。节点保持 programmatic-style 实现，凭证与节点图标继续使用当前 PNG 资源。
 
-当前 Phase 1 基线聚焦以下能力：
+## 当前能力
 
-- 通过可复用的 n8n 凭证安全配置 **API Key**
-- 提供 **Seedance 2.0 / Seedance 2.0 fast 文生视频** 任务创建能力
-- 提供按任务 ID 查询单个任务状态与结果的能力
+- Seedance API Key 凭证
+- 创建任务
+  - 文生视频
+  - 首帧图生视频
+  - 首尾帧图生视频
+  - 支持图片 URL 或 n8n binary 输入
+- 查询单个任务
+  - 可单次查询当前状态
+  - 可在节点内每 20 秒轮询一次，直到终态或超时
+  - 成功后可选下载视频到 `binary.video`
+- 获取任务列表
+  - 支持分页或自动拉取多页
+  - 支持 `status`、`taskIds`、`model`、`serviceTier` 过滤
+- 取消 / 删除任务
+  - `queued` 任务可取消
+  - 支持删除的终态记录可删除
 
-这是一个可执行的 Phase 1 最小闭环；但本阶段仍然**不承诺**任务列表、取消/删除、图生模式或 submit-and-wait 长轮询行为。
+## 平台限制
 
-当前创建任务节点严格限定为 **Seedance 2.0 / Seedance 2.0 fast 的文生视频场景**，仅暴露该场景下需要的参数。
+- Seedance 仅支持查询最近 7 天任务历史
+- `videoUrl` 与 `lastFrameUrl` 默认 24 小时有效，拿到结果后应尽快转存
+- 节点内等待模式会阻塞当前执行；长流程仍建议结合 n8n 自带 `Wait` 节点编排
 
-## 已知平台约束
+## 安装
 
-- Seedance 任务查询历史仅支持最近 **7 天 / 7 days**
-- 生成的视频 URL 与尾帧 URL 默认仅 **24 小时 / 24 hours** 有效，拿到结果后应尽快转存
+社区节点安装方式以你的 n8n 部署方式为准。发布到 npm 后，可按 n8n 社区节点常规方式安装本包：
 
-## 开发
+```bash
+npm install n8n-nodes-seedance2
+```
 
-本项目开发环境固定为 **Node.js 22**。
+本包要求 Node.js `22.x`。
 
-- 推荐在仓库目录内使用 `.nvmrc` 切换，不会影响你电脑全局的 Node 版本
-- 如果你当前 shell 还是 Node 24，`npm run dev` 会直接提示切到 Node 22
+## 凭证设置
+
+节点提供一个凭证类型：`Seedance 凭证 API`。
+
+需要填写：
+
+- `API Key`：火山方舟 Seedance API Key
+
+当前实现只需要这一项，不额外暴露 base URL。
+
+## 节点操作
+
+### Create
+
+用于创建 Seedance 视频任务。
+
+支持模型：
+
+- `Seedance 2.0`
+- `Seedance 2.0 Fast`
+
+支持创建模式：
+
+- `文生视频`
+- `首帧图生视频`
+- `首尾帧图生视频`
+
+主要参数：
+
+- `prompt`
+- `resolution`: `480p` 或 `720p`
+- `ratio`: `1:1`、`16:9`、`21:9`、`3:4`、`4:3`、`9:16`、`adaptive`
+- `duration`: `4` 到 `15` 秒，或 `-1` 自动选择
+- `generateAudio`
+- `seed`
+- `watermark`
+- `returnLastFrame`
+- `executionExpiresAfter`: `3600` 到 `259200` 秒
+
+图生模式额外支持：
+
+- 首帧图片 URL
+- 尾帧图片 URL
+- 从输入 item 的 binary 属性读取图片
+
+二进制图片限制：
+
+- 支持 `jpeg`、`png`、`webp`、`bmp`、`tiff`、`gif`
+- 单张图片最大 30 MB
+
+创建结果会返回摘要字段，便于后续流程继续使用。
+
+### Get
+
+用于根据 `taskId` 查询任务。
+
+支持两种模式：
+
+- 单次查询：返回当前状态与结果
+- 等待完成：节点内每 20 秒轮询一次，默认最多等待 20 分钟
+
+等待模式可选：
+
+- `waitTimeoutMinutes`
+- `downloadVideo`
+
+当 `downloadVideo = true` 且任务成功时，节点会把下载结果附加到 `binary.video`。
+
+### List
+
+用于查询最近 7 天内的任务列表。
+
+支持：
+
+- `returnAll`
+- `pageNum`
+- `pageSize`
+- `status`
+- `taskIds`，逗号分隔
+- `model`
+- `serviceTier`
+
+当前列表操作每个输入 item 返回 1 个输出 item，任务数组位于 `json.tasks`。
+
+### Delete
+
+用于取消或删除任务记录。
+
+行为取决于 Seedance 当前任务状态：
+
+- `queued`：可取消
+- `succeeded`、`failed`、`expired`：在 Seedance 允许时可删除
+- `running`、`cancelled`：不支持
+
+## 推荐工作流
+
+### 工作流一：提交任务后用 Wait 轮询
+
+适合更可控的 n8n 编排。
+
+1. `Seedance` -> `Create`
+2. `Wait`
+3. `Seedance` -> `Get`
+4. `IF` 根据返回状态分支
+
+建议判断：
+
+- `shouldPoll = true`：继续等待后重查
+- `isSuccess = true`：处理视频 URL 或已下载的 binary
+- `isFailure = true`：读取 `error.code` 和 `error.message`
+
+### 工作流二：节点内等待直到完成
+
+适合短任务或简单流程。
+
+1. `Seedance` -> `Create`
+2. `Seedance` -> `Get`
+3. 打开 `等待任务完成`
+4. 按需打开 `下载视频`
+
+注意：这种模式会在 n8n 执行期间持续占用该节点，直到任务完成或超时。
+
+### 工作流三：拉取最近任务并清理
+
+1. `Seedance` -> `List`
+2. 读取 `json.tasks`
+3. 根据 `status` 或时间过滤
+4. 对符合条件的任务调用 `Delete`
+
+## 输出结构
+
+### Create 输出
+
+```json
+{
+  "taskId": "task_xxx",
+  "status": "queued",
+  "createdAt": 1712345678,
+  "requestSummary": {
+    "model": "doubao-seedance-2-0-260128",
+    "prompt": "...",
+    "resolution": "720p",
+    "ratio": "adaptive",
+    "duration": 5,
+    "generateAudio": true
+  },
+  "raw": {}
+}
+```
+
+### Get 输出
+
+```json
+{
+  "taskId": "task_xxx",
+  "model": "doubao-seedance-2-0-260128",
+  "status": "succeeded",
+  "createdAt": 1712345678,
+  "updatedAt": 1712345700,
+  "videoUrl": "https://...",
+  "lastFrameUrl": "https://...",
+  "usage": {},
+  "error": null,
+  "isTerminal": true,
+  "isSuccess": true,
+  "isFailure": false,
+  "shouldPoll": false,
+  "retention": {
+    "taskHistoryDays": 7,
+    "assetUrlHours": 24,
+    "message": "Seedance 仅支持查询最近 7 天任务，videoUrl/lastFrameUrl 默认 24 小时有效，请及时转存。"
+  },
+  "raw": {}
+}
+```
+
+等待模式还会附加：
+
+- `timedOut`
+- `pollCount`
+- `waitedMs`
+
+如果启用 `downloadVideo`，还会返回：
+
+- `binary.video.data`
+- `binary.video.mimeType`
+- `binary.video.fileName`
+
+### List 输出
+
+```json
+{
+  "tasks": [],
+  "count": 0,
+  "returnAll": true,
+  "pageNum": 1,
+  "pageSize": 100,
+  "retention": {
+    "taskHistoryDays": 7,
+    "assetUrlHours": 24,
+    "message": "Seedance 仅支持查询最近 7 天任务，videoUrl/lastFrameUrl 默认 24 小时有效，请及时转存。"
+  }
+}
+```
+
+`tasks` 中的每一项与 `Get` 的单任务输出结构一致。
+
+### Delete 输出
+
+```json
+{
+  "success": true,
+  "taskId": "task_xxx",
+  "action": "deleted_or_cancelled",
+  "message": "已向 Seedance 提交取消或删除请求。实际结果取决于任务当前状态。"
+}
+```
+
+## 错误与失败输出
+
+当节点启用 n8n 的 continue-on-fail 时，失败项会返回：
+
+```json
+{
+  "error": {
+    "message": "..."
+  },
+  "status": "failed"
+}
+```
+
+## 本地开发
 
 ```bash
 npm install
@@ -32,32 +278,43 @@ npm run build
 npm run lint
 ```
 
-## Phase 1 最小工作流示例
+本项目固定使用 Node.js `22.x`。
 
-推荐的 n8n 编排方式：
+本地联调：
 
-1. **Seedance 创建任务**
-   - 从下拉框选择模型：`Seedance 2.0` 或 `Seedance 2.0 fast`。
-   - 填写提示词，以及可选的分辨率、宽高比、视频时长、随机种子、水印、任务超时时间、返回尾帧图、生成音频等参数。
-   - 节点会自动把提示词封装成官方需要的 `content: [{ type: 'text', text: ... }]`。
-   - 返回 `taskId`、`status`、`createdAt` 和 `requestSummary`，便于后续轮询。
-2. **Wait**
-   - 使用 n8n 自带 **Wait** 节点，等待一段时间后再查询状态。
-3. **Seedance 查询任务**
-   - 使用上一步输出的 `taskId` 查询任务。
-   - 返回 `status`、`videoUrl`、`lastFrameUrl`、`usage`、`error`，以及 `isTerminal`、`isSuccess`、`isFailure`、`shouldPoll` 这些适合分支判断的布尔字段。
+```bash
+npm run dev
+```
 
-典型分支：
+`npm run dev` 会：
 
-- `shouldPoll = true`：继续进入 **Wait** 后轮询
-- `isSuccess = true`：处理 `videoUrl`
-- `isFailure = true`：读取 `error.code` / `error.message`
+- 启动 `n8n-node dev --external-n8n`
+- 启动一个固定版本的本地 n8n 开发服务
 
-## 数据保留与链接时效
+在 Windows 上，脚本会显式检查当前 Node 主版本是否为 22，不符合时直接退出。
 
-- Seedance 任务查询历史仅支持最近 **7 天 / 7 days**
-- 生成的视频 URL 与尾帧 URL 默认仅 **24 小时 / 24 hours** 有效，拿到结果后应尽快转存
+## 打包与发布基础
 
-## 说明
+常用命令：
 
-本仓库遵循 n8n programmatic-style node 结构。当前实现严格限制在 Phase 1：只覆盖 Seedance 2.0 系列文生 `create` 与单任务 `get`，不会提前扩展到任务列表、取消删除、图生输入或节点内长轮询。
+```bash
+npm run build
+npm run lint
+```
+
+包元数据已经按社区节点方式注册：
+
+- 节点入口：`dist/nodes/Seedance/Seedance.node.js`
+- 凭证入口：`dist/credentials/SeedanceApi.credentials.js`
+
+发布前请至少确认：
+
+- `README.md` 与当前行为一致
+- `npm run build` 通过
+- 包版本号已正确更新
+
+注意：当前仓库按项目要求使用 PNG 图标资源。n8n 官方 lint 规则可能要求 SVG 图标，因此在保持 PNG 图标的前提下，`npm run lint` 可能会报告图标格式相关错误。若需要严格通过 n8n lint，需要将节点和凭证图标切回 SVG。
+
+## 本地 API 文档
+
+`APIdocs/` 目录仅保留在本地工作区，用于开发参考，不再纳入 Git 跟踪，也不会作为仓库内容发布。
