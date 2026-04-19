@@ -1,8 +1,13 @@
 # n8n-nodes-seedance2
 
-用于在 n8n 中接入火山引擎 Seedance 视频生成任务生命周期的社区节点包。
+用于在 n8n 中接入火山引擎 Seedance 视频生成任务生命周期，以及 Seedream 5.0 lite 图片生成能力的社区节点包。
 
-当前实现已经覆盖一条可用的任务生命周期闭环：创建任务、查询任务、获取任务列表，以及按任务状态取消或删除任务。节点保持 programmatic-style 实现，凭证与节点图标继续使用当前 PNG 资源。
+当前实现已经覆盖两条可用能力：
+
+- Seedance 视频任务生命周期闭环：创建任务、查询任务、获取任务列表，以及按任务状态取消或删除任务
+- Seedream 5.0 lite 图片生成：默认返回 n8n binary 图片输出
+
+节点保持 programmatic-style 实现，凭证与节点图标继续使用当前 PNG 资源。
 
 ## 当前能力
 
@@ -22,11 +27,18 @@
 - 取消 / 删除任务
   - `queued` 任务可取消
   - 支持删除的终态记录可删除
+- 图片生成
+  - 固定模型 `doubao-seedream-5-0-260128`
+  - 支持文生图
+  - 支持 URL、base64/data URL、binary、以及多参考图输入
+  - 支持单图与组图
+  - 默认返回单 item，多张成功图片挂到 `binary.image1`、`binary.image2`...
 
 ## 平台限制
 
 - Seedance 仅支持查询最近 7 天任务历史
 - `videoUrl` 与 `lastFrameUrl` 默认 24 小时有效，拿到结果后应尽快转存
+- 图片接口在 `response_format=url` 时返回的图片 URL 同样默认 24 小时有效
 - 节点内等待模式会阻塞当前执行；长流程仍建议结合 n8n 自带 `Wait` 节点编排
 
 ## 安装
@@ -133,6 +145,88 @@ npm install n8n-nodes-seedance2
 - `succeeded`、`failed`、`expired`：在 Seedance 允许时可删除
 - `running`、`cancelled`：不支持
 
+### Generate Image
+
+用于调用 Seedream 5.0 lite 生成图片。
+
+当前固定模型：
+
+- `doubao-seedream-5-0-260128`
+
+当前不暴露：
+
+- `streaming`
+- `output_format`
+- `watermark`
+
+节点默认使用 `response_format: b64_json` 作为主成功路径，而不是先拿 URL 再下载。这样可以直接把图片写入 n8n binary，避免把“24 小时有效 URL”作为默认依赖。
+
+#### 支持的输入模式
+
+- 仅 prompt：文生图
+- 单张参考图 URL
+- 单张参考图 base64 / data URL
+- 单张参考图 binary
+- 多张参考图 mixed sources
+  - URL
+  - base64 / data URL
+  - binary
+
+#### 主要参数
+
+- `imagePrompt`
+- `referenceImageSource`
+- `sequentialImageGeneration`
+- `maxImages`
+- `imageResolution`
+- `imageAspectRatio`
+- `webSearch`
+- `optimizePromptMode`
+
+#### 输入约束
+
+- 参考图最多 14 张
+- 参考图 binary 支持：`jpeg`、`png`、`webp`、`bmp`、`tiff`、`gif`
+- 单张参考图 binary 最大 10 MB
+- 组图模式下：参考图数量 + `maxImages` 不能超过 15
+
+#### 输出行为
+
+每个输入 item 只返回 1 个输出 item。
+
+成功生成的图片会附加到：
+
+- `binary.image1`
+- `binary.image2`
+- `binary.image3`
+
+JSON 中会保留：
+
+- `requestSummary`
+- `images`
+- `usage`
+- `toolCalls`
+
+其中：
+
+- `requestSummary` 用于保留模型、prompt、size、referenceCount、group mode 等摘要
+- `images[]` 用于保留逐图状态
+- JSON 不会包含原始 `b64_json` 内容
+
+#### 失败语义
+
+- 部分失败：
+  - 只要至少有一张图片成功，节点就返回成功结果
+  - 成功图片继续写入 `binary.imageN`
+  - 失败图片记录在 `json.images[]`
+- 全部失败：
+  - 节点抛错
+  - 错误消息会保留逐图失败原因
+
+#### 24 小时限制说明
+
+虽然当前实现默认使用 `b64_json` 直接返回图片二进制，不依赖 URL 下载作为主路径，但 Seedream 官方在 `response_format=url` 模式下返回的图片 URL 默认仍只有 `24 hours` / `24 小时` 有效期。如果后续你改为 URL 流程或自行保存 URL，应及时转存。
+
 ## 推荐工作流
 
 ### 工作流一：提交任务后用 Wait 轮询
@@ -167,6 +261,20 @@ npm install n8n-nodes-seedance2
 2. 读取 `json.tasks`
 3. 根据 `status` 或时间过滤
 4. 对符合条件的任务调用 `Delete`
+
+### 工作流四：Generate Image
+
+适合直接在 n8n 内拿到图片 binary。
+
+1. `Seedance` -> `Generate Image`
+2. 输入 prompt
+3. 按需配置参考图来源：URL / base64 / binary / 多参考图
+4. 按需配置组图、联网搜索、提示词优化、分辨率与比例
+5. 在下游节点读取：
+   - `binary.image1`
+   - `binary.image2`
+   - `json.images[]`
+   - `json.usage`
 
 ## 输出结构
 
@@ -256,6 +364,50 @@ npm install n8n-nodes-seedance2
   "message": "已向 Seedance 提交取消或删除请求。实际结果取决于任务当前状态。"
 }
 ```
+
+### Generate Image 输出
+
+```json
+{
+  "requestSummary": {
+    "model": "doubao-seedream-5-0-260128",
+    "prompt": "A quiet lake at sunrise",
+    "size": "2048x2048",
+    "referenceCount": 0,
+    "sequentialImageGeneration": "disabled",
+    "webSearch": false,
+    "optimizePromptMode": "standard"
+  },
+  "images": [
+    {
+      "index": 0,
+      "isSuccess": true,
+      "binaryPropertyName": "image1",
+      "mimeType": "image/png",
+      "fileName": "seedream-image-1.png"
+    }
+  ],
+  "usage": {
+    "generated_images": 1
+  },
+  "toolCalls": {
+    "web_search": 0
+  }
+}
+```
+
+同时 binary 输出中会附加：
+
+- `binary.image1.data`
+- `binary.image1.mimeType`
+- `binary.image1.fileName`
+
+如果组图返回多张成功图片，则继续追加：
+
+- `binary.image2`
+- `binary.image3`
+
+如果发生部分失败，失败项不会生成 binary，但会保留在 `json.images[]` 中。
 
 ## 错误与失败输出
 

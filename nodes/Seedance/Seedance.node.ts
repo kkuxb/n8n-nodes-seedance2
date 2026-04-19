@@ -1,16 +1,21 @@
 import { NodeOperationError, type IDataObject, type IExecuteFunctions, type INodeExecutionData, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
 
 import { createOperationProperties } from './description/create.operation';
+import { imageOperationProperties } from './description/image.operation';
 import { getOperationProperties } from './description/get.operation';
 import { listOperationProperties } from './description/list.operation';
 import { deleteOperationProperties } from './description/delete.operation';
 import { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } from './shared/mappers/createPayload';
+import { buildSeedreamImagePayload, mapSeedreamRecommendedSize } from './shared/mappers/seedreamImagePayload';
+import { mapSeedreamImageResponse } from './shared/mappers/seedreamImageResult';
 import { buildAggregatedListOutput, mapTaskResponse, selectSingleTaskResponse } from './shared/mappers/task';
 import { getFriendlyDeleteError, normalizeSeedanceError } from './shared/mappers/errors';
 import { pollTaskUntilSettled } from './shared/polling/getTaskPolling';
 import { getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
 import type { SeedanceCreateInput } from './shared/validators/create';
+import { validateSeedreamImageInput } from './shared/validators/seedreamImage';
+import type { SeedreamImagePayloadInput, SeedreamImageReferenceInput } from './shared/types';
 
 export class Seedance implements INodeType {
 	description: INodeTypeDescription = {
@@ -19,8 +24,8 @@ export class Seedance implements INodeType {
 		icon: 'file:seedance.png',
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{$parameter["operation"] === "create" ? "创建任务" : "查询任务"}}',
-		description: '在 n8n 中创建和查询 Seedance 2.0 视频任务。注意：API 仅保留最近 7 天任务，且视频结果 URL 默认仅 24 小时有效，请及时下载转存。',
+		subtitle: '={{$parameter["operation"] === "generateImage" ? "生成图片" : $parameter["operation"] === "create" ? "创建任务" : "查询任务"}}',
+		description: '在 n8n 中创建、查询和管理 Seedance 2.0 视频任务，并规划接入 Seedream 5.0 lite 图片生成。注意：生成结果 URL 默认仅 24 小时有效，请及时下载转存。',
 		defaults: {
 			name: 'Seedance',
 		},
@@ -50,6 +55,12 @@ export class Seedance implements INodeType {
 						action: '创建视频生成任务',
 					},
 					{
+						name: '生成图片',
+						value: 'generateImage',
+						description: '使用 Seedream 5.0 lite 生成图片',
+						action: '生成图片',
+					},
+					{
 						name: '查询任务',
 						value: 'get',
 						description: '根据任务 ID 查询 Seedance 任务状态',
@@ -70,6 +81,7 @@ export class Seedance implements INodeType {
 				],
 			},
 			...createOperationProperties,
+			...imageOperationProperties,
 			...getOperationProperties,
 			...listOperationProperties,
 			...deleteOperationProperties,
@@ -104,11 +116,162 @@ export class Seedance implements INodeType {
 			};
 		};
 
+		const processSeedreamBinaryReference = async (
+			itemIndex: number,
+			binaryProp: string,
+		): Promise<SeedreamImageReferenceInput> => {
+			this.helpers.assertBinaryData(itemIndex, binaryProp);
+			const itemBinary = items[itemIndex].binary?.[binaryProp];
+			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+
+			return {
+				source: 'binary',
+				value: binaryData.toString('base64'),
+				mimeType: itemBinary?.mimeType,
+				byteLength: binaryData.length,
+			};
+		};
+
+		const collectSeedreamReferenceImages = async (
+			itemIndex: number,
+		): Promise<SeedreamImageReferenceInput[]> => {
+			const referenceImageSource = this.getNodeParameter(
+				'referenceImageSource',
+				itemIndex,
+				'none',
+			) as string;
+
+			if (referenceImageSource === 'none') {
+				return [];
+			}
+
+			if (referenceImageSource === 'url') {
+				return [
+					{
+						source: 'url',
+						value: this.getNodeParameter('referenceImageUrl', itemIndex, '') as string,
+					},
+				];
+			}
+
+			if (referenceImageSource === 'base64') {
+				return [
+					{
+						source: 'base64',
+						value: this.getNodeParameter('referenceImageBase64', itemIndex, '') as string,
+					},
+				];
+			}
+
+			if (referenceImageSource === 'binary') {
+				const binaryProp = this.getNodeParameter(
+					'referenceImageBinaryProperty',
+					itemIndex,
+					'data',
+				) as string;
+				return [await processSeedreamBinaryReference(itemIndex, binaryProp)];
+			}
+
+			const referenceImagesCollection = this.getNodeParameter('referenceImages', itemIndex, {}) as IDataObject;
+			const referenceItems = Array.isArray(referenceImagesCollection.items)
+				? (referenceImagesCollection.items as IDataObject[])
+				: [];
+			const referenceImages: SeedreamImageReferenceInput[] = [];
+
+			for (const referenceItem of referenceItems) {
+				const source = referenceItem.source as string;
+
+				if (source === 'binary') {
+					referenceImages.push(
+						await processSeedreamBinaryReference(
+							itemIndex,
+							(referenceItem.binaryProperty as string | undefined) ?? 'data',
+						),
+					);
+				} else if (source === 'base64') {
+					referenceImages.push({
+						source: 'base64',
+						value: (referenceItem.base64 as string | undefined) ?? '',
+					});
+				} else {
+					referenceImages.push({
+						source: 'url',
+						value: (referenceItem.url as string | undefined) ?? '',
+					});
+				}
+			}
+
+			return referenceImages;
+		};
+
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			const operation = this.getNodeParameter('operation', itemIndex) as string;
             const node = this.getNode();
 
 			try {
+				if (operation === 'generateImage') {
+					const imageAdvancedOptions = this.getNodeParameter(
+						'imageAdvancedOptions',
+						itemIndex,
+						{},
+					) as IDataObject;
+					const referenceImages = await collectSeedreamReferenceImages(itemIndex);
+					const sequentialImageGeneration = this.getNodeParameter(
+						'sequentialImageGeneration',
+						itemIndex,
+						'disabled',
+					) as SeedreamImagePayloadInput['sequentialImageGeneration'];
+					const maxImages = this.getNodeParameter('maxImages', itemIndex, 15) as number;
+					const imageInput: SeedreamImagePayloadInput = {
+						model: this.getNodeParameter('imageModel', itemIndex) as SeedreamImagePayloadInput['model'],
+						prompt: this.getNodeParameter('imagePrompt', itemIndex, '') as string,
+						referenceImages,
+						sequentialImageGeneration,
+						...(sequentialImageGeneration === 'auto' ? { maxImages } : {}),
+						imageResolution: this.getNodeParameter(
+							'imageResolution',
+							itemIndex,
+							'2K',
+						) as SeedreamImagePayloadInput['imageResolution'],
+						imageAspectRatio: this.getNodeParameter(
+							'imageAspectRatio',
+							itemIndex,
+							'1:1',
+						) as SeedreamImagePayloadInput['imageAspectRatio'],
+						webSearch: (imageAdvancedOptions.webSearch as boolean | undefined) ?? false,
+						optimizePromptMode:
+							(imageAdvancedOptions.optimizePromptMode as SeedreamImagePayloadInput['optimizePromptMode'] | undefined) ??
+							'standard',
+					};
+
+					validateSeedreamImageInput(imageInput);
+
+					const payload = buildSeedreamImagePayload(imageInput);
+					const response = await seedanceApiRequest(this, {
+						method: 'POST',
+						path: getSeedanceOperationEndpoint('generateImage'),
+						body: payload,
+					});
+					const mapped = mapSeedreamImageResponse(response, {
+						model: imageInput.model,
+						prompt: imageInput.prompt,
+						size: mapSeedreamRecommendedSize(imageInput.imageResolution, imageInput.imageAspectRatio),
+						referenceCount: referenceImages.length,
+						sequentialImageGeneration: imageInput.sequentialImageGeneration,
+						...(imageInput.maxImages ? { maxImages: imageInput.maxImages } : {}),
+						webSearch: imageInput.webSearch,
+						optimizePromptMode: imageInput.optimizePromptMode,
+					});
+
+					returnData.push({
+						json: mapped.json,
+						...(mapped.binary ? { binary: mapped.binary as INodeExecutionData['binary'] } : {}),
+						pairedItem: { item: itemIndex },
+					});
+
+					continue;
+				}
+
 				if (operation === 'create') {
 					const advancedOptions = this.getNodeParameter('advancedOptions', itemIndex, {}) as IDataObject;
 
