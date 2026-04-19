@@ -358,7 +358,7 @@ export class Seedance implements INodeType {
 					continue;
 				}
 
-				throw error;
+				throw new NodeOperationError(node, normalized.message, { itemIndex });
 			}
 		}
 

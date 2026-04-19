@@ -178,13 +178,15 @@ test('下载错误提示保留原始信息并追加 24 hours 提示', () => {
 });
 
 test('视频下载 helper 返回 binary-ready 结构', async () => {
+	const calls: Array<Record<string, unknown>> = [];
 	const result = await downloadSeedanceVideo(
 		{
 			async getCredentials() {
 				return { apiKey: 'test-api-key' };
 			},
 			helpers: {
-				async httpRequest() {
+				async httpRequest(options: Record<string, unknown>) {
+					calls.push(options);
 					return {
 						body: Buffer.from('video-bytes'),
 						headers: {
@@ -201,4 +203,10 @@ test('视频下载 helper 返回 binary-ready 结构', async () => {
 	assert.equal(result.mimeType, 'video/mp4');
 	assert.equal(result.fileName, 'task_123.mp4');
 	assert.equal(result.data, Buffer.from('video-bytes').toString('base64'));
+	assert.equal(calls.length, 1);
+	assert.equal(calls[0].url, 'https://example.com/task_123.mp4');
+	assert.deepEqual(calls[0].headers, {});
+	assert.equal(calls[0].sendCredentialsOnCrossOriginRedirect, false);
+	assert.equal(calls[0].returnFullResponse, true);
+	assert.equal(calls[0].encoding, 'arraybuffer');
 });

@@ -12,8 +12,8 @@ export class SeedanceApi implements ICredentialType {
 	testedBy = 'seedanceApi';
 
 	icon: Icon = {
-		light: 'file:seedance-light.svg',
-		dark: 'file:seedance-dark.svg',
+		light: 'file:seedance-light.png',
+		dark: 'file:seedance-dark.png',
 	};
 
 	properties: INodeProperties[] = [

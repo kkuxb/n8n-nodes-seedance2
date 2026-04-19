@@ -92,9 +92,11 @@ export async function downloadSeedanceVideo(
 		const response = await executor.helpers.httpRequest({
 			method: 'GET',
 			url: videoUrl,
+			headers: {},
 			json: false,
 			encoding: 'arraybuffer',
 			returnFullResponse: true,
+			sendCredentialsOnCrossOriginRedirect: false,
 		});
 
 		const body = Buffer.isBuffer(response.body) ? response.body : Buffer.from(response.body as ArrayBuffer);

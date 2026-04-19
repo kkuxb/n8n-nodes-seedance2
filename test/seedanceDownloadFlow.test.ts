@@ -99,6 +99,8 @@ test('wait + download + succeeded 返回原 json 并附加 binary.video', async 
 	assert.equal(output.binary?.video?.data, Buffer.from('video-binary-content').toString('base64'));
 	assert.equal(calls.length, 2);
 	assert.equal(calls[1].url, 'https://example.com/assets/task_download_success.mp4');
+	assert.deepEqual(calls[1].headers, {});
+	assert.equal(calls[1].sendCredentialsOnCrossOriginRedirect, false);
 });
 
 test('wait + download + 非 succeeded 终态不会触发下载', async () => {
@@ -165,6 +167,53 @@ test('wait + download 失败时抛出原始错误并保留 24 hours 提示', asy
 	);
 
 	assert.equal(calls.length, 2);
+});
+
+test('wait + download 失败时顶层抛错使用归一化后的可读消息', async () => {
+	const { context } = createExecutionContext(
+		{
+			operation: 'get',
+			taskId: 'task_expired_asset_message',
+			waitForCompletion: true,
+			waitTimeoutMinutes: 20,
+			downloadVideo: true,
+		},
+		[
+			{
+				id: 'task_expired_asset_message',
+				status: 'succeeded',
+				content: {
+					video_url: 'https://example.com/assets/task_expired_asset_message.mp4',
+				},
+			},
+			{
+				__error: {
+					response: {
+						statusCode: 403,
+						body: {
+							error: {
+								message: 'Request failed with status code 403',
+							},
+						},
+					},
+				},
+			},
+		],
+	);
+
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String(
+				(error as { message?: unknown; description?: unknown }).message ??
+					(error as { description?: unknown }).description ??
+					error,
+			);
+			assert.match(message, /Request failed with status code 403/);
+			assert.match(message, /24 hours/);
+			return true;
+		},
+	);
 });
 
 test('wait disabled 时即使 downloadVideo=true 也不会下载', async () => {

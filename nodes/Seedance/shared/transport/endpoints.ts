@@ -26,6 +26,12 @@ export function getSeedanceOperationEndpoint(operation: SeedanceOperationKey): s
   return operationEndpoints[operation];
 }
 
+export function getSeedanceDeleteTaskEndpoint(taskId: string): string {
+  const normalizedTaskId = taskId.trim();
+
+  return `${operationEndpoints.deleteTask}/${encodeURIComponent(normalizedTaskId)}`;
+}
+
 export function buildSeedanceEndpointUrl(path: string, baseUrl: string): string {
   return `${baseUrl.replace(/\/$/, '')}${normalizeSeedancePath(path)}`;
 }

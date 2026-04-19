@@ -2,7 +2,6 @@ import type { INodeProperties } from 'n8n-workflow';
 
 const deleteDisplayOptions = {
 	show: {
-		resource: ['task'],
 		operation: ['delete'],
 	},
 };

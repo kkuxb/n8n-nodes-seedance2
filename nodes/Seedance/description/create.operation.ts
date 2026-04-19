@@ -2,7 +2,6 @@ import type { INodeProperties } from 'n8n-workflow';
 
 const createDisplayOptions = {
 	show: {
-		resource: ['task'],
 		operation: ['create'],
 	},
 };
@@ -64,7 +63,6 @@ export const createOperationProperties: INodeProperties[] = [
 		],
 		displayOptions: {
 			show: {
-				resource: ['task'],
 				operation: ['create'],
 				createMode: ['i2v_first', 'i2v_first_last'],
 			},
@@ -77,7 +75,6 @@ export const createOperationProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				resource: ['task'],
 				operation: ['create'],
 				createMode: ['i2v_first', 'i2v_first_last'],
 				firstFrameInputMethod: ['url'],
@@ -91,7 +88,6 @@ export const createOperationProperties: INodeProperties[] = [
 		default: 'data',
 		displayOptions: {
 			show: {
-				resource: ['task'],
 				operation: ['create'],
 				createMode: ['i2v_first', 'i2v_first_last'],
 				firstFrameInputMethod: ['binary'],
@@ -109,7 +105,6 @@ export const createOperationProperties: INodeProperties[] = [
 		],
 		displayOptions: {
 			show: {
-				resource: ['task'],
 				operation: ['create'],
 				createMode: ['i2v_first_last'],
 			},
@@ -122,7 +117,6 @@ export const createOperationProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				resource: ['task'],
 				operation: ['create'],
 				createMode: ['i2v_first_last'],
 				lastFrameInputMethod: ['url'],
@@ -136,7 +130,6 @@ export const createOperationProperties: INodeProperties[] = [
 		default: 'data',
 		displayOptions: {
 			show: {
-				resource: ['task'],
 				operation: ['create'],
 				createMode: ['i2v_first_last'],
 				lastFrameInputMethod: ['binary'],

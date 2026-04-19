@@ -1,3 +1,33 @@
+# GSD / local planning state
 .planning/
+
+# Local AI assistant instructions
+AGENTS.md
+
+# Dependencies and build output
 node_modules/
 dist/
+*.tsbuildinfo
+*.tgz
+
+# Local n8n / npm caches
+.npm/
+.npm-cache/
+.npm-n8n-cache/
+.npm-n8n-cache-node22/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
