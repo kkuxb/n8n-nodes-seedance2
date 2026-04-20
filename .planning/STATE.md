@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Seedream 5.0 lite image generation and UX iteration
-status: complete
-stopped_at: Completed Phase 13
-last_updated: "2026-04-20T05:24:34.624Z"
-last_activity: 2026-04-20 -- Phase 13 verified and completed
+status: archived
+stopped_at: Archived milestone v1.2
+last_updated: "2026-04-20T08:45:00.000Z"
+last_activity: 2026-04-20 -- Milestone v1.2 archived and ready for next-milestone definition
 progress:
   total_phases: 10
   completed_phases: 10
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** v1.2 gap-closure phase complete and ready for milestone re-audit
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Phase: 13
-Plan: complete
-Status: Complete
-Last activity: 2026-04-20 -- Phase 13 verified and completed
+Phase: none
+Plan: none
+Status: Milestone archived
+Last activity: 2026-04-20 -- Milestone v1.2 archived and ready for next-milestone definition
 
 Progress: [██████████] 100%
 
@@ -89,7 +89,7 @@ Progress: [██████████] 100%
 
 ### Pending Todos
 
-- Run `/gsd-plan-phase 13` to plan the v1.2 audit reconciliation and verification closure phase.
+- Run `/gsd-new-milestone` to define the next milestone and create a fresh requirements file.
 
 ### Blockers/Concerns
 
@@ -105,6 +105,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-20T05:24:34.624Z
-Stopped at: Completed Phase 13
+Last session: 2026-04-20T08:45:00.000Z
+Stopped at: Archived milestone v1.2
 Resume file: None
