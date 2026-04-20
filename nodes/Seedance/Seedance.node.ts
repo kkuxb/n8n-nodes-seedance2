@@ -238,14 +238,17 @@ export class Seedance implements INodeType {
 		};
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-			const operation = this.getNodeParameter('operation', itemIndex) as string;
-            const node = this.getNode();
+			const node = this.getNode();
+			let operation: string | undefined;
 
 			try {
 				const generationMode = this.getNodeParameter('generationMode', itemIndex, 'video') as string;
-				const imageOperation = this.getNodeParameter('imageOperation', itemIndex, '') as string;
+				operation = generationMode === 'image'
+					? undefined
+					: (this.getNodeParameter('operation', itemIndex, 'create') as string);
 
 				if (generationMode === 'image' || operation === 'generateImage') {
+					const imageOperation = this.getNodeParameter('imageOperation', itemIndex, '') as string;
 					const resolvedImageOperation = imageOperation || 'textToImage';
 					const referenceImages = await collectSeedreamReferenceImages(itemIndex, resolvedImageOperation);
 					const sequentialImageGenerationValue = this.getNodeParameter(

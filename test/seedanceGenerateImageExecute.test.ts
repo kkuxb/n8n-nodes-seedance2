@@ -10,6 +10,10 @@ function createExecutionContext(
 	parameters: Record<string, unknown>,
 	responses: Array<Record<string, unknown>>,
 	binary?: Record<string, { data: Buffer; mimeType: string }>,
+	options?: {
+		throwOnMissingWithoutFallback?: boolean;
+		requestedParameters?: string[];
+	},
 ) {
 	const calls: Array<Record<string, unknown>> = [];
 	const assertedBinaryProperties: string[] = [];
@@ -32,6 +36,16 @@ function createExecutionContext(
 				];
 			},
 			getNodeParameter(name: string, _itemIndex: number, fallback?: unknown) {
+				options?.requestedParameters?.push(name);
+
+				if (
+					!Object.prototype.hasOwnProperty.call(parameters, name) &&
+					fallback === undefined &&
+					options?.throwOnMissingWithoutFallback === true
+				) {
+					throw new Error(`Could not get parameter: ${name}`);
+				}
+
 				return Object.prototype.hasOwnProperty.call(parameters, name)
 					? parameters[name]
 					: fallback;
@@ -109,6 +123,25 @@ test('prompt-only image generation returns one item with binary.image1', async (
 	assert.equal(JSON.stringify(output.json).includes('RAW_BASE64_SENTINEL'), false);
 	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
 	assert.equal((calls[0].body as Record<string, unknown>).response_format, 'b64_json');
+});
+
+test('image mode succeeds when operation parameter is absent from saved workflow state', async () => {
+	const requestedParameters: string[] = [];
+	const { calls, context } = createExecutionContext(
+		baseParameters,
+		[{ data: [{ b64_json: 'RAW_BASE64_SENTINEL' }], usage: { generated_images: 1 } }],
+		undefined,
+		{
+			throwOnMissingWithoutFallback: true,
+			requestedParameters,
+		},
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+
+	assert.equal(result[0][0].binary?.image1.data, 'RAW_BASE64_SENTINEL');
+	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
+	assert.equal(requestedParameters.includes('operation'), false);
 });
 
 test('multiple successful images stay in one output item with binary.image1 and binary.image2', async () => {
