@@ -277,6 +277,7 @@ export class Seedance implements INodeType {
 							itemIndex,
 							'1:1',
 						) as SeedreamImagePayloadInput['imageAspectRatio'],
+						watermark: this.getNodeParameter('imageWatermark', itemIndex, false) as boolean,
 						webSearch: this.getNodeParameter('webSearch', itemIndex, false) as boolean,
 						...(optimizePrompt ? { optimizePromptMode: 'standard' as const } : {}),
 					};
@@ -300,6 +301,7 @@ export class Seedance implements INodeType {
 						referenceCount: imageInput.referenceImages?.length ?? 0,
 						sequentialImageGeneration: imageInput.sequentialImageGeneration,
 						...(imageInput.maxImages ? { maxImages: imageInput.maxImages } : {}),
+						watermark: imageInput.watermark,
 						webSearch: imageInput.webSearch,
 						optimizePromptMode: imageInput.optimizePromptMode,
 					});

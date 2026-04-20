@@ -16,6 +16,7 @@ function baseInput(overrides = {}) {
 		sequentialImageGeneration: 'disabled',
 		imageResolution: '2K',
 		imageAspectRatio: '1:1',
+		watermark: false,
 		webSearch: false,
 		optimizePromptMode: 'standard',
 		...overrides,
@@ -30,6 +31,7 @@ test('prompt-only payload defaults to b64_json and omits image', () => {
 	assert.equal(payload.response_format, 'b64_json');
 	assert.equal(payload.sequential_image_generation, 'disabled');
 	assert.equal(payload.size, '2048x2048');
+	assert.equal(payload.watermark, false);
 	assert.equal('image' in payload, false);
 });
 
@@ -99,6 +101,12 @@ test('payload keeps b64_json as the primary success path', () => {
 	assert.equal('url' in payload, false);
 });
 
+test('image payload can explicitly enable watermark when requested', () => {
+	const payload = buildSeedreamImagePayload(baseInput({ watermark: true }));
+
+	assert.equal(payload.watermark, true);
+});
+
 test('recommended size mapping uses official Seedream table', () => {
 	assert.equal(mapSeedreamRecommendedSize('3K', '21:9'), '4704x2016');
 	assert.equal(mapSeedreamRecommendedSize('2K', '9:16'), '1600x2848');
@@ -109,5 +117,13 @@ test('image operation exposes resolution and aspect ratio fields instead of size
 
 	assert.ok(propertyNames.includes('imageResolution'));
 	assert.ok(propertyNames.includes('imageAspectRatio'));
+	assert.ok(propertyNames.includes('imageWatermark'));
 	assert.equal(propertyNames.includes('size'), false);
+});
+
+test('image watermark field defaults to false in node description', () => {
+	const watermarkProperty = imageOperationProperties.find((property) => property.name === 'imageWatermark');
+
+	assert.ok(watermarkProperty);
+	assert.equal(watermarkProperty.default, false);
 });

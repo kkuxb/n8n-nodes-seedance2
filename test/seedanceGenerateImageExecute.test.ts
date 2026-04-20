@@ -120,9 +120,11 @@ test('prompt-only image generation returns one item with binary.image1', async (
 	assert.equal(output.binary?.image1.data, 'RAW_BASE64_SENTINEL');
 	assert.equal(output.binary?.image1.mimeType, 'image/png');
 	assert.equal((output.json.requestSummary as Record<string, unknown>).size, '2048x2048');
+	assert.equal((output.json.requestSummary as Record<string, unknown>).watermark, false);
 	assert.equal(JSON.stringify(output.json).includes('RAW_BASE64_SENTINEL'), false);
 	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
 	assert.equal((calls[0].body as Record<string, unknown>).response_format, 'b64_json');
+	assert.equal((calls[0].body as Record<string, unknown>).watermark, false);
 });
 
 test('image mode succeeds when operation parameter is absent from saved workflow state', async () => {
@@ -273,6 +275,21 @@ test('optimizePrompt=false omits optimize prompt options from image payload', as
 	await Seedance.prototype.execute.call(context);
 
 	assert.equal('optimize_prompt_options' in (calls[0].body as Record<string, unknown>), false);
+});
+
+test('image watermark can be explicitly enabled from node parameters', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			...baseParameters,
+			imageWatermark: true,
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+	);
+
+	await Seedance.prototype.execute.call(context);
+
+	assert.equal((calls[0].body as Record<string, unknown>).watermark, true);
+	assert.equal(((calls[0].body as Record<string, unknown>).response_format as string), 'b64_json');
 });
 
 test('mixed reference sources are posted through the image payload layer', async () => {

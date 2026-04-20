@@ -245,6 +245,14 @@ export const imageOperationProperties: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: '添加水印',
+		name: 'imageWatermark',
+		type: 'boolean',
+		default: false,
+		description: 'Whether 在生成图片右下角添加“AI生成”水印。默认关闭。',
+		displayOptions: allImageOperationDisplayOptions,
+	},
+	{
 		displayName: '启用联网搜索',
 		name: 'webSearch',
 		type: 'boolean',

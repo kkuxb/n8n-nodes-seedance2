@@ -57,6 +57,31 @@ test('高级选项只包含 4 个进阶参数', () => {
 	);
 });
 
+test('视频高级选项中的水印默认值为 false', () => {
+	const advancedOptionsProperty = createOperationProperties.find(
+		(property) => property.name === 'advancedOptions',
+	);
+
+	assert.ok(advancedOptionsProperty);
+	const watermarkProperty = advancedOptionsProperty.options.find(
+		(property: { name: string }) => property.name === 'watermark',
+	);
+
+	assert.ok(watermarkProperty);
+	assert.equal(watermarkProperty.default, false);
+});
+
+test('视频 create payload 在显式关闭水印时仍会传递 watermark=false', () => {
+	const payload = buildCreatePayload({
+		createMode: 't2v',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: '无水印视频',
+		watermark: false,
+	});
+
+	assert.equal(payload.watermark, false);
+});
+
 test('文生 create payload 自动构造 text content 项', () => {
 	const payload = buildCreatePayload({
 		createMode: 't2v',

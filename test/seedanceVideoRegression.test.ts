@@ -16,6 +16,7 @@ const { GET_TASK_POLL_INTERVAL_MS } = pollingModule;
 
 test('video create defaults remain unchanged after image additions', () => {
 	const payload = buildCreatePayload({
+		createMode: 't2v',
 		model: 'doubao-seedance-2-0-fast-260128',
 		prompt: 'A cinematic river scene',
 		resolution: '720p',
@@ -31,6 +32,18 @@ test('video create defaults remain unchanged after image additions', () => {
 	assert.equal(payload.content[0].text, 'A cinematic river scene');
 	assert.equal(payload.duration, 5);
 	assert.equal(payload.model, 'doubao-seedance-2-0-fast-260128');
+	assert.equal(payload.watermark, true);
+});
+
+test('video payload preserves explicit watermark=false for default-off requests', () => {
+	const payload = buildCreatePayload({
+		createMode: 't2v',
+		model: 'doubao-seedance-2-0-fast-260128',
+		prompt: 'A cinematic river scene',
+		watermark: false,
+	});
+
+	assert.equal(payload.watermark, false);
 });
 
 test('video polling and endpoint contracts stay stable', () => {
