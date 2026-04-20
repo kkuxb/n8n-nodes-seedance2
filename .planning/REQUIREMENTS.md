@@ -20,7 +20,7 @@
 - [x] **IMG-01**: 用户可以在现有 `Seedance` 节点中选择新的图片生成 operation。
 - [x] **IMG-02**: 用户可以使用固定模型 `doubao-seedream-5-0-260128` 发起图片生成请求。
 - [x] **IMG-03**: 用户可以只提供 prompt 执行文生图。
-- [x] **IMG-04**: 用户可以通过 URL、base64 或 binary 传入单张参考图。
+- [ ] **IMG-04**: 用户可以通过公开 UI 使用 URL 或 binary 传入单张参考图；base64/data URL 仅保留内部兼容 fallback，不作为当前 v1.2 公共入口。
 - [x] **IMG-05**: 用户可以在组图/融合场景下传入多张参考图，并满足官方 2-14 张输入及总张数不超过 15 的约束。
 - [x] **IMG-06**: 用户可以切换单图模式与组图模式；当启用组图时可设置 `max_images`。
 - [x] **IMG-07**: 用户可以配置 `web_search`、`optimize_prompt_options.mode` 与 `size`。
@@ -38,7 +38,7 @@
 ## Validation Requirements
 
 - [x] **VAL-IMG-01**: 对参考图输入数量、MIME 类型、大小与来源进行运行时校验，避免向 API 发送明显无效请求。
-- [ ] **VAL-IMG-02**: 对 `size` 做 Seedream 5.0 lite 允许值与像素格式校验。
+- [ ] **VAL-IMG-02**: 对 `size` 做 Seedream 5.0 lite 允许值与像素格式校验，并在 gap closure phase 中补齐 formal verification trace。
 - [x] **VAL-IMG-03**: 对组图模式下 `max_images`、参考图数量和总图数上限做联合校验。
 - [x] **VAL-IMG-04**: 当 API 返回逐图失败信息时，节点输出必须保留失败细节，而不是静默丢弃。
 
@@ -46,7 +46,7 @@
 
 - 不支持 streaming / 流式图片输出。
 - 不在本 milestone 支持除 `doubao-seedream-5-0-260128` 之外的其他 Seedream 模型。
-- 不在本 milestone 暴露 `output_format` 与 `watermark` 为用户配置项，除非后续实现证明 API 默认值无法满足默认 binary 输出目标。
+- 不在本 milestone 暴露 `output_format`；图片 `watermark` 因官方默认会添加“AI生成”标识，当前已作为默认关闭、可手动开启的用户选项保留。
 - 不新增独立图片节点或独立图片 credentials。
 - 不修改既有 PNG icon 决策。
 

@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 milestone** — Phases 1-3 (shipped 2026-04-17)
 - ✅ **v1.1 milestone** — Phases 04-07 (shipped 2026-04-19; archived in [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md))
-- 🔄 **v1.2 milestone** — Phases 08-12 Seedream 5.0 lite image generation and UX iteration (planning)
+- 🔄 **v1.2 milestone** — Phases 08-13 Seedream 5.0 lite image generation, UX iteration, and audit reconciliation (planning)
 
 ## Phases
 
@@ -168,6 +168,22 @@ Plans:
 - [x] 12-02-PLAN.md — Wire the refactored image operations into execution, including comma-separated multi-reference inputs and final image/video regression coverage
 **UI hint**: yes
 
+### Phase 13: v1.2 Audit Reconciliation & Verification Closure
+
+**Goal**: Close the v1.2 milestone audit gaps by reconciling requirements to current product behavior, adding missing phase verification artifacts, and locking one final execute-level regression around group image request shaping.
+**Depends on**: Phase 12
+**Requirements**: IMG-04, VAL-IMG-02
+**Gap Closure**: Closes gaps from audit
+**Success Criteria** (what must be TRUE):
+
+1. Phase 08-11 each have a retrospective `*-VERIFICATION.md` so the milestone audit no longer fails the phase-verification gate.
+2. `REQUIREMENTS.md` matches the current public product contract: image reference inputs are public UI URL/binary with base64 kept only as internal compatibility fallback, `VAL-IMG-02` is marked according to implemented validation, and image watermark scope matches the shipped default-off behavior.
+3. A direct execute-level regression locks `sequential_image_generation_options.max_images` request shaping so the remaining non-blocking audit debt is reduced.
+**Plans**: 0 plans
+
+Plans:
+- [ ] Planning pending
+
 ## Progress
 
 | Phase                                 | Milestone | Plans Complete | Status      | Completed  |
@@ -184,3 +200,4 @@ Plans:
 | 10. Image Execution Path, Binary Output & Partial-Failure Mapping | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 11. Regression Coverage, Documentation & Release Hardening | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 12. Image Generation Mode & Operation UX Refactor | v1.2 | 2/2 | Complete    | 2026-04-20 |
+| 13. v1.2 Audit Reconciliation & Verification Closure | v1.2 | 0/0 | Not Planned | - |

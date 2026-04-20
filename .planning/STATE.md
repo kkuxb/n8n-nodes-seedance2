@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Seedream 5.0 lite image generation and UX iteration
-status: complete
-stopped_at: Completed Phase 12
-last_updated: "2026-04-20T02:40:00.000Z"
-last_activity: 2026-04-20 -- Phase 12 verified and completed
+status: active
+stopped_at: Phase 13 added
+last_updated: "2026-04-20T03:00:00.000Z"
+last_activity: 2026-04-20 -- Phase 13 added for v1.2 audit reconciliation and verification closure
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
-  total_plans: 15
+  total_plans: 16
   completed_plans: 15
-  percent: 100
+  percent: 94
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** v1.2 milestone complete and ready for milestone audit/completion
+**Current focus:** Phase 13 added to close v1.2 audit gaps without changing shipped UX behavior
 
 ## Current Position
 
-Phase: 12
-Plan: complete
-Status: Complete
-Last activity: 2026-04-20 -- Phase 12 verified and completed
+Phase: 13
+Plan: not planned
+Status: Not Planned
+Last activity: 2026-04-20 -- Phase 13 added for v1.2 audit reconciliation and verification closure
 
-Progress: [██████████] 100%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -76,14 +76,16 @@ Progress: [██████████] 100%
 - Normalize comma-separated URL and binary property inputs before reusing the existing Seedream validator and payload builder.
 - `optimizePrompt=false` omits `optimize_prompt_options`; `true` maps to the supported `standard` mode.
 - Keep legacy `operation=generateImage` and internal base64/fixedCollection reference handling as compatibility fallbacks, while the public Phase 12 UI exposes URL and binary reference sources only.
+- Close v1.2 audit gaps by reconciling planning artifacts to shipped behavior instead of re-expanding the public image reference UI.
 
 ### Roadmap Evolution
 
 - Phase 12 added: 图片生成功能改为先选择视频生成/图像生成模式，再在图像生成模式下选择文生图/图生图；同步调整字段顺序、组图开关和参考图 URL/二进制属性名的多值输入方式。
+- Phase 13 added: 关闭 v1.2 审计缺口，补齐 Phase 08-11 verification，统一 IMG-04/VAL-IMG-02/图片水印的 requirements 与审计口径，并补一条组图 execute 回归断言。
 
 ### Pending Todos
 
-- Run `/gsd-audit-milestone` when ready to audit the completed v1.2 milestone.
+- Run `/gsd-plan-phase 13` to plan the v1.2 audit reconciliation and verification closure phase.
 
 ### Blockers/Concerns
 
@@ -99,6 +101,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-20T02:40:00.000Z
-Stopped at: Completed Phase 12
+Last session: 2026-04-20T03:00:00.000Z
+Stopped at: Ready to plan Phase 13
 Resume file: None
