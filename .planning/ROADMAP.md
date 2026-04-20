@@ -179,10 +179,11 @@ Plans:
 1. Phase 08-11 each have a retrospective `*-VERIFICATION.md` so the milestone audit no longer fails the phase-verification gate.
 2. `REQUIREMENTS.md` matches the current public product contract: image reference inputs are public UI URL/binary with base64 kept only as internal compatibility fallback, `VAL-IMG-02` is marked according to implemented validation, and image watermark scope matches the shipped default-off behavior.
 3. A direct execute-level regression locks `sequential_image_generation_options.max_images` request shaping so the remaining non-blocking audit debt is reduced.
-**Plans**: 0 plans
+**Plans**: 2 plans
 
 Plans:
-- [ ] Planning pending
+- [x] 13-01-PLAN.md — Create missing Phase 08-11 verification artifacts and reconcile v1.2 requirements to shipped public behavior
+- [x] 13-02-PLAN.md — Add execute-level group image `max_images` request-shaping regression and run the focused image/video gate
 
 ## Progress
 
@@ -200,4 +201,4 @@ Plans:
 | 10. Image Execution Path, Binary Output & Partial-Failure Mapping | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 11. Regression Coverage, Documentation & Release Hardening | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 12. Image Generation Mode & Operation UX Refactor | v1.2 | 2/2 | Complete    | 2026-04-20 |
-| 13. v1.2 Audit Reconciliation & Verification Closure | v1.2 | 0/0 | Not Planned | - |
+| 13. v1.2 Audit Reconciliation & Verification Closure | v1.2 | 2/2 | Complete    | 2026-04-20 |

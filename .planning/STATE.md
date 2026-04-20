@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Seedream 5.0 lite image generation and UX iteration
-status: active
-stopped_at: Phase 13 added
-last_updated: "2026-04-20T03:00:00.000Z"
-last_activity: 2026-04-20 -- Phase 13 added for v1.2 audit reconciliation and verification closure
+status: complete
+stopped_at: Completed Phase 13
+last_updated: "2026-04-20T05:24:34.624Z"
+last_activity: 2026-04-20 -- Phase 13 verified and completed
 progress:
   total_phases: 10
-  completed_phases: 9
-  total_plans: 16
-  completed_plans: 15
-  percent: 94
+  completed_phases: 10
+  total_plans: 17
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** Phase 13 added to close v1.2 audit gaps without changing shipped UX behavior
+**Current focus:** v1.2 gap-closure phase complete and ready for milestone re-audit
 
 ## Current Position
 
 Phase: 13
-Plan: not planned
-Status: Not Planned
-Last activity: 2026-04-20 -- Phase 13 added for v1.2 audit reconciliation and verification closure
+Plan: complete
+Status: Complete
+Last activity: 2026-04-20 -- Phase 13 verified and completed
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 15
+- Total plans completed: 17
 - Average duration: 0 min
 - Total execution time: 0.0 hours
 
@@ -48,6 +48,7 @@ Progress: [█████████░] 94%
 | 04 | 1 | - | - |
 | 05 | 2 | - | - |
 | 12 | 2 | - | - |
+| 13 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -57,6 +58,7 @@ Progress: [█████████░] 94%
 | Phase 06 P02 | 10min | 2 tasks | 6 files |
 | Phase 12 P01 | 7min | 3 tasks | 8 files |
 | Phase 12 P02 | 8 min | 3 tasks | 5 files |
+| Phase 13 P02 | 1 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -77,6 +79,8 @@ Progress: [█████████░] 94%
 - `optimizePrompt=false` omits `optimize_prompt_options`; `true` maps to the supported `standard` mode.
 - Keep legacy `operation=generateImage` and internal base64/fixedCollection reference handling as compatibility fallbacks, while the public Phase 12 UI exposes URL and binary reference sources only.
 - Close v1.2 audit gaps by reconciling planning artifacts to shipped behavior instead of re-expanding the public image reference UI.
+- Keep the new audit-closing regression at the execute() boundary so real node runtime request shaping is verified, not just mapper behavior.
+- Reuse the Phase 12 focused regression family unchanged after adding the new assertion so image and video contracts remain jointly verified.
 
 ### Roadmap Evolution
 
@@ -101,6 +105,6 @@ Progress: [█████████░] 94%
 
 ## Session Continuity
 
-Last session: 2026-04-20T03:00:00.000Z
-Stopped at: Ready to plan Phase 13
+Last session: 2026-04-20T05:24:34.624Z
+Stopped at: Completed Phase 13
 Resume file: None
