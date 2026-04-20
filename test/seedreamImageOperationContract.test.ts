@@ -203,6 +203,16 @@ test('image-to-image inserts reference controls after prompt optimization', () =
 	assert.equal(visibleNames.includes('maxImages'), false);
 });
 
+test('reference image descriptions explain comma-separated multi-value inputs', () => {
+	const referenceImageUrl = findProperty('referenceImageUrl');
+	const referenceImageBinaryProperty = findProperty('referenceImageBinaryProperty');
+
+	assert.match(String(referenceImageUrl.description), /逗号/);
+	assert.match(String(referenceImageUrl.description), /多个|多张/);
+	assert.match(String(referenceImageBinaryProperty.description), /逗号/);
+	assert.match(String(referenceImageBinaryProperty.description), /多个|多张/);
+});
+
 test('image model is fixed to Seedream 5.0 lite', () => {
 	const imageModel = findProperty('imageModel');
 
