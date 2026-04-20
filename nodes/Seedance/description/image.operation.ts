@@ -100,7 +100,7 @@ export const imageOperationProperties: INodeProperties[] = [
 		name: 'referenceImageUrl',
 		type: 'string',
 		default: '',
-		description: '可公网访问的参考图片 URL。',
+		description: '可公网访问的参考图片 URL；支持用逗号分隔填写多个值，按顺序映射为多张参考图。',
 		displayOptions: {
 			show: {
 				...imageToImageDisplayOptions.show,
@@ -129,7 +129,7 @@ export const imageOperationProperties: INodeProperties[] = [
 		name: 'referenceImageBinaryProperty',
 		type: 'string',
 		default: 'data',
-		description: '包含参考图片的输入 binary 属性名。',
+		description: '包含参考图片的输入 binary 属性名；支持用逗号分隔填写多个属性名，按顺序读取多张参考图。',
 		displayOptions: {
 			show: {
 				...imageToImageDisplayOptions.show,

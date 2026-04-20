@@ -70,6 +70,12 @@ test('multiple references preserve normalized order', () => {
 	);
 });
 
+test('group generation options are omitted when sequential generation is disabled', () => {
+	const payload = buildSeedreamImagePayload(baseInput({ maxImages: 7 }));
+
+	assert.equal('sequential_image_generation_options' in payload, false);
+});
+
 test('group generation, web search, and prompt optimization map to API fields', () => {
 	const payload = buildSeedreamImagePayload(
 		baseInput({ sequentialImageGeneration: 'auto', maxImages: 4, webSearch: true }),

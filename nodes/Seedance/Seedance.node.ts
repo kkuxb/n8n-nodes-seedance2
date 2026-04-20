@@ -152,7 +152,12 @@ export class Seedance implements INodeType {
 
 		const collectSeedreamReferenceImages = async (
 			itemIndex: number,
+			imageOperation: string,
 		): Promise<SeedreamImageReferenceInput[]> => {
+			if (imageOperation === 'textToImage') {
+				return [];
+			}
+
 			const referenceImageSource = this.getNodeParameter(
 				'referenceImageSource',
 				itemIndex,
@@ -164,12 +169,14 @@ export class Seedance implements INodeType {
 			}
 
 			if (referenceImageSource === 'url') {
-				return [
-					{
-						source: 'url',
-						value: this.getNodeParameter('referenceImageUrl', itemIndex, '') as string,
-					},
-				];
+				return (this.getNodeParameter('referenceImageUrl', itemIndex, '') as string)
+					.split(',')
+					.map((value) => value.trim())
+					.filter((value) => value.length > 0)
+					.map((value) => ({
+						source: 'url' as const,
+						value,
+					}));
 			}
 
 			if (referenceImageSource === 'base64') {
@@ -182,12 +189,20 @@ export class Seedance implements INodeType {
 			}
 
 			if (referenceImageSource === 'binary') {
-				const binaryProp = this.getNodeParameter(
+				const binaryProps = (this.getNodeParameter(
 					'referenceImageBinaryProperty',
 					itemIndex,
 					'data',
-				) as string;
-				return [await processSeedreamBinaryReference(itemIndex, binaryProp)];
+				) as string)
+					.split(',')
+					.map((value) => value.trim())
+					.filter((value) => value.length > 0);
+
+				const references: SeedreamImageReferenceInput[] = [];
+				for (const binaryProp of binaryProps) {
+					references.push(await processSeedreamBinaryReference(itemIndex, binaryProp));
+				}
+				return references;
 			}
 
 			const referenceImagesCollection = this.getNodeParameter('referenceImages', itemIndex, {}) as IDataObject;
@@ -231,7 +246,8 @@ export class Seedance implements INodeType {
 				const imageOperation = this.getNodeParameter('imageOperation', itemIndex, '') as string;
 
 				if (generationMode === 'image' || operation === 'generateImage') {
-					const referenceImages = await collectSeedreamReferenceImages(itemIndex);
+					const resolvedImageOperation = imageOperation || 'textToImage';
+					const referenceImages = await collectSeedreamReferenceImages(itemIndex, resolvedImageOperation);
 					const sequentialImageGeneration = this.getNodeParameter(
 						'sequentialImageGeneration',
 						itemIndex,
@@ -255,16 +271,10 @@ export class Seedance implements INodeType {
 							'1:1',
 						) as SeedreamImagePayloadInput['imageAspectRatio'],
 						webSearch: this.getNodeParameter('webSearch', itemIndex, false) as boolean,
-						optimizePromptMode: (this.getNodeParameter(
-							'optimizePrompt',
-							itemIndex,
-							true,
-						) as boolean)
-							? 'standard'
-							: 'standard',
+						optimizePromptMode: 'standard',
 					};
 
-					if (imageOperation === 'textToImage') {
+					if (resolvedImageOperation === 'textToImage') {
 						imageInput.referenceImages = [];
 					}
 
@@ -280,7 +290,7 @@ export class Seedance implements INodeType {
 						model: imageInput.model,
 						prompt: imageInput.prompt,
 						size: mapSeedreamRecommendedSize(imageInput.imageResolution, imageInput.imageAspectRatio),
-						referenceCount: referenceImages.length,
+						referenceCount: imageInput.referenceImages?.length ?? 0,
 						sequentialImageGeneration: imageInput.sequentialImageGeneration,
 						...(imageInput.maxImages ? { maxImages: imageInput.maxImages } : {}),
 						webSearch: imageInput.webSearch,
