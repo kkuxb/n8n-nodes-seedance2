@@ -227,12 +227,10 @@ export class Seedance implements INodeType {
             const node = this.getNode();
 
 			try {
-				if (operation === 'generateImage') {
-					const imageAdvancedOptions = this.getNodeParameter(
-						'imageAdvancedOptions',
-						itemIndex,
-						{},
-					) as IDataObject;
+				const generationMode = this.getNodeParameter('generationMode', itemIndex, 'video') as string;
+				const imageOperation = this.getNodeParameter('imageOperation', itemIndex, '') as string;
+
+				if (generationMode === 'image' || operation === 'generateImage') {
 					const referenceImages = await collectSeedreamReferenceImages(itemIndex);
 					const sequentialImageGeneration = this.getNodeParameter(
 						'sequentialImageGeneration',
@@ -256,11 +254,19 @@ export class Seedance implements INodeType {
 							itemIndex,
 							'1:1',
 						) as SeedreamImagePayloadInput['imageAspectRatio'],
-						webSearch: (imageAdvancedOptions.webSearch as boolean | undefined) ?? false,
-						optimizePromptMode:
-							(imageAdvancedOptions.optimizePromptMode as SeedreamImagePayloadInput['optimizePromptMode'] | undefined) ??
-							'standard',
+						webSearch: this.getNodeParameter('webSearch', itemIndex, false) as boolean,
+						optimizePromptMode: (this.getNodeParameter(
+							'optimizePrompt',
+							itemIndex,
+							true,
+						) as boolean)
+							? 'standard'
+							: 'standard',
 					};
+
+					if (imageOperation === 'textToImage') {
+						imageInput.referenceImages = [];
+					}
 
 					validateSeedreamImageInput(imageInput);
 

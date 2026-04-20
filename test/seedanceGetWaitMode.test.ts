@@ -149,6 +149,7 @@ test('节点描述公开 waitForCompletion 与 waitTimeoutMinutes 参数', () =>
 	assert.match(String(downloadVideo?.description), /binary\.video/);
 	assert.deepEqual(downloadVideo?.displayOptions, {
 		show: {
+			generationMode: ['video'],
 			operation: ['get'],
 			waitForCompletion: [true],
 		},
