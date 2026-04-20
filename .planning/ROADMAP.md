@@ -183,4 +183,4 @@ Plans:
 | 09. Image Payload Builder, Input Normalization & Validation | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 10. Image Execution Path, Binary Output & Partial-Failure Mapping | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 11. Regression Coverage, Documentation & Release Hardening | v1.2 | 2/2 | Complete | 2026-04-19 |
-| 12. Image Generation Mode & Operation UX Refactor | v1.2 | 2/2 | Complete   | 2026-04-20 |
+| 12. Image Generation Mode & Operation UX Refactor | v1.2 | 2/2 | Complete    | 2026-04-20 |

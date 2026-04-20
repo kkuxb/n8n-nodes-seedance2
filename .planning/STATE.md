@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: verifying
-stopped_at: Completed 12-02-PLAN.md
-last_updated: "2026-04-20T01:50:51.244Z"
-last_activity: 2026-04-20
+milestone: v1.2
+milestone_name: Seedream 5.0 lite image generation and UX iteration
+status: complete
+stopped_at: Completed Phase 12
+last_updated: "2026-04-20T02:40:00.000Z"
+last_activity: 2026-04-20 -- Phase 12 verified and completed
 progress:
   total_phases: 9
   completed_phases: 9
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** Phase 12 — image-generation-mode-operation-ux-refactor
+**Current focus:** v1.2 milestone complete and ready for milestone audit/completion
 
 ## Current Position
 
-Phase: 12 (image-generation-mode-operation-ux-refactor) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-04-20
+Phase: 12
+Plan: complete
+Status: Complete
+Last activity: 2026-04-20 -- Phase 12 verified and completed
 
 Progress: [██████████] 100%
 
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 13
+- Total plans completed: 15
 - Average duration: 0 min
 - Total execution time: 0.0 hours
 
@@ -47,6 +47,7 @@ Progress: [██████████] 100%
 | 1-3 | 10 | 0 min | - |
 | 04 | 1 | - | - |
 | 05 | 2 | - | - |
+| 12 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -64,7 +65,7 @@ Progress: [██████████] 100%
 - Add image generation inside the existing `Seedance` node instead of creating a separate node.
 - Reuse the existing `SeedanceApi` API Key credential for image generation.
 - v1.2 MVP supports only Seedream 5.0 lite (`doubao-seedream-5-0-260128`).
-- Support text-to-image plus reference-image inputs from URL/base64/binary where practical.
+- Support text-to-image plus image-to-image reference inputs from URL and binary in the public UI, with comma-separated multi-value support.
 - Cover both single-image and sequential/group image generation.
 - Default result behavior should be n8n binary output.
 - Do not support streaming in this milestone.
@@ -73,7 +74,8 @@ Progress: [██████████] 100%
 - Preserve existing video lifecycle contracts and accepted PNG icon technical debt.
 - Drive image execution from `generationMode=image` with `imageOperation` fallback to `textToImage`, while keeping `operation=generateImage` as internal compatibility behavior only.
 - Normalize comma-separated URL and binary property inputs before reusing the existing Seedream validator and payload builder.
-- Keep `optimizePrompt` mapped to the currently supported `standard` mode to avoid inventing unsupported API values.
+- `optimizePrompt=false` omits `optimize_prompt_options`; `true` maps to the supported `standard` mode.
+- Keep legacy `operation=generateImage` and internal base64/fixedCollection reference handling as compatibility fallbacks, while the public Phase 12 UI exposes URL and binary reference sources only.
 
 ### Roadmap Evolution
 
@@ -81,7 +83,7 @@ Progress: [██████████] 100%
 
 ### Pending Todos
 
-- Run `/gsd-verify-work 12` to verify the completed image generation mode and operation UX refactor.
+- Run `/gsd-audit-milestone` when ready to audit the completed v1.2 milestone.
 
 ### Blockers/Concerns
 
@@ -97,6 +99,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-04-20T01:50:51.239Z
-Stopped at: Completed 12-02-PLAN.md
+Last session: 2026-04-20T02:40:00.000Z
+Stopped at: Completed Phase 12
 Resume file: None
