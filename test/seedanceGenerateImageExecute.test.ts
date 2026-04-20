@@ -80,7 +80,8 @@ function createExecutionContext(
 }
 
 const baseParameters = {
-	operation: 'generateImage',
+	generationMode: 'image',
+	imageOperation: 'textToImage',
 	imageModel: 'doubao-seedream-5-0-260128',
 	imagePrompt: 'A quiet lake at sunrise',
 	referenceImageSource: 'none',
@@ -88,7 +89,8 @@ const baseParameters = {
 	maxImages: 15,
 	imageResolution: '2K',
 	imageAspectRatio: '1:1',
-	imageAdvancedOptions: { webSearch: false, optimizePromptMode: 'standard' },
+	webSearch: false,
+	optimizePrompt: true,
 };
 
 test('prompt-only image generation returns one item with binary.image1', async () => {
@@ -122,30 +124,54 @@ test('multiple successful images stay in one output item with binary.image1 and 
 	assert.equal(output.binary?.image2.data, 'second_success');
 });
 
-test('single binary reference is read and posted as data URL payload', async () => {
-	const { calls, assertedBinaryProperties, context } = createExecutionContext(
+test('image-to-image with comma-separated URL values posts ordered URL array', async () => {
+	const { calls, context } = createExecutionContext(
 		{
 			...baseParameters,
-			referenceImageSource: 'binary',
-			referenceImageBinaryProperty: 'sourceImage',
+			imageOperation: 'imageToImage',
+			referenceImageSource: 'url',
+			referenceImageUrl: ' https://example.com/a.png, ,https://example.com/b.png ',
 		},
 		[{ data: [{ b64_json: 'generated_image' }] }],
-		{ sourceImage: { data: Buffer.from('binary-data'), mimeType: 'image/png' } },
 	);
 
 	await Seedance.prototype.execute.call(context);
 
-	assert.deepEqual(assertedBinaryProperties, ['sourceImage']);
-	assert.equal(
-		(calls[0].body as Record<string, unknown>).image,
-		`data:image/png;base64,${Buffer.from('binary-data').toString('base64')}`,
+	assert.deepEqual((calls[0].body as Record<string, unknown>).image, [
+		'https://example.com/a.png',
+		'https://example.com/b.png',
+	]);
+});
+
+test('image-to-image with comma-separated binary properties posts ordered data URL array', async () => {
+	const { calls, assertedBinaryProperties, context } = createExecutionContext(
+		{
+			...baseParameters,
+			imageOperation: 'imageToImage',
+			referenceImageSource: 'binary',
+			referenceImageBinaryProperty: ' firstImage, secondImage ',
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+		{
+			firstImage: { data: Buffer.from('binary-data-1'), mimeType: 'image/png' },
+			secondImage: { data: Buffer.from('binary-data-2'), mimeType: 'image/webp' },
+		},
 	);
+
+	await Seedance.prototype.execute.call(context);
+
+	assert.deepEqual(assertedBinaryProperties, ['firstImage', 'secondImage']);
+	assert.deepEqual((calls[0].body as Record<string, unknown>).image, [
+		`data:image/png;base64,${Buffer.from('binary-data-1').toString('base64')}`,
+		`data:image/webp;base64,${Buffer.from('binary-data-2').toString('base64')}`,
+	]);
 });
 
 test('mixed reference sources are posted through the image payload layer', async () => {
 	const { calls, context } = createExecutionContext(
 		{
 			...baseParameters,
+			imageOperation: 'imageToImage',
 			referenceImageSource: 'multiple',
 			referenceImages: {
 				items: [
@@ -166,6 +192,38 @@ test('mixed reference sources are posted through the image payload layer', async
 		'data:image/jpeg;base64,abc123',
 		`data:image/webp;base64,${Buffer.from('binary-data').toString('base64')}`,
 	]);
+});
+
+test('video operations still use video branches when generationMode is video', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'get',
+			taskId: 'task_123',
+			waitForCompletion: false,
+		},
+		[
+			{
+				items: [
+					{
+						id: 'task_123',
+						status: 'queued',
+						model: 'doubao-seedance-2-0-fast-260128',
+						content: [{ type: 'text', text: 'video prompt' }],
+						created_at: 1710000000,
+						updated_at: 1710000001,
+					},
+				],
+			},
+		],
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+
+	assert.equal(result[0][0].json.taskId, 'task_123');
+	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks/);
+	assert.deepEqual(calls[0].qs, { id: 'task_123' });
+	assert.equal((calls[0].body as Record<string, unknown> | undefined) ?? undefined, undefined);
 });
 
 test('partial failure returns one item with successful binary and failed image metadata', async () => {

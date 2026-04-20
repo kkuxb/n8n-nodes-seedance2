@@ -233,14 +233,16 @@ test('Seedream image constants and endpoint are exported', () => {
 test('generateImage execute path is live and returns binary image output', async () => {
 	const result = await Seedance.prototype.execute.call(
 		createExecutionContext({
-			operation: 'generateImage',
+			generationMode: 'image',
+			imageOperation: 'textToImage',
 			imageModel: 'doubao-seedream-5-0-260128',
 			imagePrompt: 'A quiet lake at sunrise',
 			referenceImageSource: 'none',
 			sequentialImageGeneration: 'disabled',
 			imageResolution: '2K',
 			imageAspectRatio: '1:1',
-			imageAdvancedOptions: { webSearch: false, optimizePromptMode: 'standard' },
+			webSearch: false,
+			optimizePrompt: true,
 		}),
 	);
 
