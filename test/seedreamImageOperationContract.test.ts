@@ -20,12 +20,31 @@ function findProperty(name: string): Record<string, unknown> {
 	return property;
 }
 
-function assertGenerateImageOnly(property: Record<string, unknown>) {
-	assert.deepEqual(property.displayOptions, {
-		show: {
-			operation: ['generateImage'],
-		},
-	});
+function getOptionValues(property: Record<string, unknown>): unknown[] {
+	return (property.options as Array<Record<string, unknown>>).map((option) => option.value);
+}
+
+function getPropertyIndex(name: string): number {
+	const index = getProperties().findIndex((property) => property.name === name);
+	assert.notEqual(index, -1, `Expected property ${name} to exist`);
+	return index;
+}
+
+function isVisibleFor(property: Record<string, unknown>, parameters: Record<string, unknown>): boolean {
+	const displayOptions = property.displayOptions as { show?: Record<string, unknown[]> } | undefined;
+	const show = displayOptions?.show;
+
+	if (!show) {
+		return true;
+	}
+
+	return Object.entries(show).every(([name, values]) => values.includes(parameters[name]));
+}
+
+function visiblePropertyNames(parameters: Record<string, unknown>): string[] {
+	return getProperties()
+		.filter((property) => isVisibleFor(property, parameters))
+		.map((property) => property.name as string);
 }
 
 function createExecutionContext(parameters: Record<string, unknown>) {
@@ -66,32 +85,122 @@ function createExecutionContext(parameters: Record<string, unknown>) {
 	};
 }
 
-test('operation selector preserves video operations and adds generateImage', () => {
-	const operation = findProperty('operation');
-	const optionValues = (operation.options as Array<Record<string, unknown>>).map(
-		(option) => option.value,
-	);
+test('generation mode selector appears before operation and defaults to video', () => {
+	const generationMode = findProperty('generationMode');
 
-	assert.deepEqual(optionValues, ['create', 'generateImage', 'get', 'list', 'delete']);
-	assert.deepEqual((operation.options as Array<Record<string, unknown>>)[1], {
-		name: '生成图片',
-		value: 'generateImage',
-		description: '使用 Seedream 5.0 lite 生成图片',
-		action: '生成图片',
+	assert.ok(getPropertyIndex('generationMode') < getPropertyIndex('operation'));
+	assert.equal(generationMode.default, 'video');
+	assert.deepEqual(generationMode.options, [
+		{
+			name: '视频生成',
+			value: 'video',
+			description: '创建、查询、列表和取消或删除 Seedance 视频任务',
+		},
+		{
+			name: '图像生成',
+			value: 'image',
+			description: '使用 Seedream 5.0 lite 生成图片',
+		},
+	]);
+});
+
+test('video operation selector is only visible in video mode', () => {
+	const operation = findProperty('operation');
+
+	assert.deepEqual(getOptionValues(operation), ['create', 'get', 'list', 'delete']);
+	assert.deepEqual(operation.displayOptions, {
+		show: {
+			generationMode: ['video'],
+		},
 	});
 });
 
-test('image operation fields are gated to generateImage', () => {
-	for (const name of [
-		'imageModel',
-		'imagePrompt',
+test('image operation selector is only visible in image mode', () => {
+	const imageOperation = findProperty('imageOperation');
+
+	assert.deepEqual(imageOperation.displayOptions, {
+		show: {
+			generationMode: ['image'],
+		},
+	});
+	assert.deepEqual(imageOperation.options, [
+		{
+			name: '文生图',
+			value: 'textToImage',
+			description: '仅使用提示词生成图片',
+			action: '文生图',
+		},
+		{
+			name: '图生图',
+			value: 'imageToImage',
+			description: '使用提示词和参考图生成图片',
+			action: '图生图',
+		},
+	]);
+});
+
+test('text-to-image visible fields follow the requested mode-first order', () => {
+	const visibleNames = visiblePropertyNames({
+		generationMode: 'image',
+		imageOperation: 'textToImage',
+		sequentialImageGeneration: 'auto',
+	});
+
+	assert.deepEqual(
+		visibleNames.filter((name) =>
+			[
+				'generationMode',
+				'imageOperation',
+				'imageModel',
+				'imagePrompt',
+				'optimizePrompt',
+				'imageResolution',
+				'imageAspectRatio',
+				'sequentialImageGeneration',
+				'maxImages',
+				'webSearch',
+			].includes(name),
+		),
+		[
+			'generationMode',
+			'imageOperation',
+			'imageModel',
+			'imagePrompt',
+			'optimizePrompt',
+			'imageResolution',
+			'imageAspectRatio',
+			'sequentialImageGeneration',
+			'maxImages',
+			'webSearch',
+		],
+	);
+});
+
+test('image-to-image inserts reference controls after prompt optimization', () => {
+	const visibleNames = visiblePropertyNames({
+		generationMode: 'image',
+		imageOperation: 'imageToImage',
+		referenceImageSource: 'url',
+		sequentialImageGeneration: 'disabled',
+	});
+	const relevantNames = visibleNames.filter((name) =>
+		[
+			'optimizePrompt',
+			'referenceImageSource',
+			'referenceImageUrl',
+			'imageResolution',
+			'imageAspectRatio',
+		].includes(name),
+	);
+
+	assert.deepEqual(relevantNames, [
+		'optimizePrompt',
 		'referenceImageSource',
-		'sequentialImageGeneration',
-		'maxImages',
-		'imageAdvancedOptions',
-	]) {
-		assertGenerateImageOnly(findProperty(name));
-	}
+		'referenceImageUrl',
+		'imageResolution',
+		'imageAspectRatio',
+	]);
+	assert.equal(visibleNames.includes('maxImages'), false);
 });
 
 test('image model is fixed to Seedream 5.0 lite', () => {
