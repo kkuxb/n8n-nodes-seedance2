@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 
 const getDisplayOptions = {
 	show: {
+		generationMode: ['video'],
 		operation: ['get'],
 	},
 };

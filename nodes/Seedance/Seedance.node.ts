@@ -24,7 +24,7 @@ export class Seedance implements INodeType {
 		icon: 'file:seedance.png',
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{$parameter["operation"] === "generateImage" ? "生成图片" : $parameter["operation"] === "create" ? "创建任务" : "查询任务"}}',
+		subtitle: '={{$parameter["generationMode"] === "image" ? ($parameter["imageOperation"] === "imageToImage" ? "图生图" : "文生图") : $parameter["operation"] === "create" ? "创建任务" : $parameter["operation"] === "get" ? "查询任务" : $parameter["operation"] === "list" ? "获取任务列表" : "取消 / 删除任务"}}',
 		description: '在 n8n 中创建、查询和管理 Seedance 2.0 视频任务，并规划接入 Seedream 5.0 lite 图片生成。注意：生成结果 URL 默认仅 24 小时有效，请及时下载转存。',
 		defaults: {
 			name: 'Seedance',
@@ -42,23 +42,41 @@ export class Seedance implements INodeType {
 		],
 		properties: [
 			{
+				displayName: '生成模式',
+				name: 'generationMode',
+				type: 'options',
+				noDataExpression: true,
+				default: 'video',
+				options: [
+					{
+						name: '视频生成',
+						value: 'video',
+						description: '创建、查询、列表和取消或删除 Seedance 视频任务',
+					},
+					{
+						name: '图像生成',
+						value: 'image',
+						description: '使用 Seedream 5.0 lite 生成图片',
+					},
+				],
+			},
+			{
 				displayName: '操作',
 				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
 				default: 'create',
+				displayOptions: {
+					show: {
+						generationMode: ['video'],
+					},
+				},
 				options: [
 					{
 						name: '创建任务',
 						value: 'create',
 						description: '创建 Seedance 2.0 文生视频任务',
 						action: '创建视频生成任务',
-					},
-					{
-						name: '生成图片',
-						value: 'generateImage',
-						description: '使用 Seedream 5.0 lite 生成图片',
-						action: '生成图片',
 					},
 					{
 						name: '查询任务',
