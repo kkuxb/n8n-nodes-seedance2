@@ -292,6 +292,26 @@ test('image watermark can be explicitly enabled from node parameters', async () 
 	assert.equal(((calls[0].body as Record<string, unknown>).response_format as string), 'b64_json');
 });
 
+test('group image execution posts sequential image max_images through execute payload shaping', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			...baseParameters,
+			sequentialImageGeneration: true,
+			maxImages: 4,
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const requestBody = calls[0].body as Record<string, unknown>;
+	const requestSummary = result[0][0].json.requestSummary as Record<string, unknown>;
+
+	assert.equal(requestBody.sequential_image_generation, 'auto');
+	assert.deepEqual(requestBody.sequential_image_generation_options, { max_images: 4 });
+	assert.equal(requestSummary.sequentialImageGeneration, 'auto');
+	assert.equal(requestSummary.maxImages, 4);
+});
+
 test('mixed reference sources are posted through the image payload layer', async () => {
 	const { calls, context } = createExecutionContext(
 		{
