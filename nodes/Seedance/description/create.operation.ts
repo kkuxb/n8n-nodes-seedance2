@@ -64,7 +64,7 @@ export const createOperationProperties: INodeProperties[] = [
 		],
 		displayOptions: {
 			show: {
-				operation: ['create'],
+				...createDisplayOptions.show,
 				createMode: ['i2v_first', 'i2v_first_last'],
 			},
 		},
@@ -76,7 +76,7 @@ export const createOperationProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['create'],
+				...createDisplayOptions.show,
 				createMode: ['i2v_first', 'i2v_first_last'],
 				firstFrameInputMethod: ['url'],
 			},
@@ -89,7 +89,7 @@ export const createOperationProperties: INodeProperties[] = [
 		default: 'data',
 		displayOptions: {
 			show: {
-				operation: ['create'],
+				...createDisplayOptions.show,
 				createMode: ['i2v_first', 'i2v_first_last'],
 				firstFrameInputMethod: ['binary'],
 			},
@@ -106,7 +106,7 @@ export const createOperationProperties: INodeProperties[] = [
 		],
 		displayOptions: {
 			show: {
-				operation: ['create'],
+				...createDisplayOptions.show,
 				createMode: ['i2v_first_last'],
 			},
 		},
@@ -118,7 +118,7 @@ export const createOperationProperties: INodeProperties[] = [
 		default: '',
 		displayOptions: {
 			show: {
-				operation: ['create'],
+				...createDisplayOptions.show,
 				createMode: ['i2v_first_last'],
 				lastFrameInputMethod: ['url'],
 			},
@@ -131,7 +131,7 @@ export const createOperationProperties: INodeProperties[] = [
 		default: 'data',
 		displayOptions: {
 			show: {
-				operation: ['create'],
+				...createDisplayOptions.show,
 				createMode: ['i2v_first_last'],
 				lastFrameInputMethod: ['binary'],
 			},

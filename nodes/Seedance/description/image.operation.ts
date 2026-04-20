@@ -84,15 +84,12 @@ export const imageOperationProperties: INodeProperties[] = [
 		displayName: '参考图来源',
 		name: 'referenceImageSource',
 		type: 'options',
-		default: 'none',
+		default: 'url',
 		options: [
-			{ name: '无参考图', value: 'none' },
 			{ name: '图片 URL', value: 'url' },
-			{ name: 'Base64', value: 'base64' },
 			{ name: '二进制数据', value: 'binary' },
-			{ name: '多张参考图', value: 'multiple' },
 		],
-		description: '选择是否为 Seedream 图片生成提供参考图。',
+		description: '选择参考图来源。可通过下方输入框用英文逗号或中文逗号分隔多个 URL 或 binary 属性名。',
 		displayOptions: imageToImageDisplayOptions,
 	},
 	{
@@ -100,7 +97,7 @@ export const imageOperationProperties: INodeProperties[] = [
 		name: 'referenceImageUrl',
 		type: 'string',
 		default: '',
-		description: '可公网访问的参考图片 URL；支持用逗号分隔填写多个值，按顺序映射为多张参考图。',
+		description: '可公网访问的参考图片 URL；支持用英文逗号或中文逗号分隔填写多个值，按顺序映射为多张参考图。',
 		displayOptions: {
 			show: {
 				...imageToImageDisplayOptions.show,
@@ -129,7 +126,7 @@ export const imageOperationProperties: INodeProperties[] = [
 		name: 'referenceImageBinaryProperty',
 		type: 'string',
 		default: 'data',
-		description: '包含参考图片的输入 binary 属性名；支持用逗号分隔填写多个属性名，按顺序读取多张参考图。',
+		description: '包含参考图片的输入 binary 属性名；支持用英文逗号或中文逗号分隔填写多个属性名，按顺序读取多张参考图。',
 		displayOptions: {
 			show: {
 				...imageToImageDisplayOptions.show,
@@ -224,13 +221,9 @@ export const imageOperationProperties: INodeProperties[] = [
 	{
 		displayName: '组图模式',
 		name: 'sequentialImageGeneration',
-		type: 'options',
-		default: 'disabled',
-		options: [
-			{ name: '单图', value: 'disabled' },
-			{ name: '自动组图', value: 'auto' },
-		],
-		description: '选择生成单张图片，或让模型自动判断是否生成一组内容关联的图片。',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to let the model automatically decide if it should generate a related group of images.',
 		displayOptions: allImageOperationDisplayOptions,
 	},
 	{
@@ -247,7 +240,7 @@ export const imageOperationProperties: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...allImageOperationDisplayOptions.show,
-				sequentialImageGeneration: ['auto'],
+				sequentialImageGeneration: [true],
 			},
 		},
 	},

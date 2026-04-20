@@ -54,10 +54,13 @@ export function buildSeedreamImagePayload(input: SeedreamImagePayloadInput): IDa
 		size: mapSeedreamRecommendedSize(input.imageResolution, input.imageAspectRatio),
 		response_format: SEEDREAM_IMAGE_RESPONSE_FORMAT,
 		sequential_image_generation: input.sequentialImageGeneration,
-		optimize_prompt_options: {
-			mode: input.optimizePromptMode,
-		},
 	};
+
+	if (input.optimizePromptMode) {
+		payload.optimize_prompt_options = {
+			mode: input.optimizePromptMode,
+		};
+	}
 
 	if (normalizedReferences.length === 1) {
 		payload.image = normalizedReferences[0].value;

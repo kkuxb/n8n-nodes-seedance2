@@ -154,6 +154,12 @@ export class Seedance implements INodeType {
 			itemIndex: number,
 			imageOperation: string,
 		): Promise<SeedreamImageReferenceInput[]> => {
+			const splitCommaSeparated = (value: string) =>
+				value
+					.split(/[，,]/)
+					.map((part) => part.trim())
+					.filter((part) => part.length > 0);
+
 			if (imageOperation === 'textToImage') {
 				return [];
 			}
@@ -169,10 +175,7 @@ export class Seedance implements INodeType {
 			}
 
 			if (referenceImageSource === 'url') {
-				return (this.getNodeParameter('referenceImageUrl', itemIndex, '') as string)
-					.split(',')
-					.map((value) => value.trim())
-					.filter((value) => value.length > 0)
+				return splitCommaSeparated(this.getNodeParameter('referenceImageUrl', itemIndex, '') as string)
 					.map((value) => ({
 						source: 'url' as const,
 						value,
@@ -189,14 +192,11 @@ export class Seedance implements INodeType {
 			}
 
 			if (referenceImageSource === 'binary') {
-				const binaryProps = (this.getNodeParameter(
+				const binaryProps = splitCommaSeparated(this.getNodeParameter(
 					'referenceImageBinaryProperty',
 					itemIndex,
 					'data',
-				) as string)
-					.split(',')
-					.map((value) => value.trim())
-					.filter((value) => value.length > 0);
+				) as string);
 
 				const references: SeedreamImageReferenceInput[] = [];
 				for (const binaryProp of binaryProps) {
@@ -248,12 +248,16 @@ export class Seedance implements INodeType {
 				if (generationMode === 'image' || operation === 'generateImage') {
 					const resolvedImageOperation = imageOperation || 'textToImage';
 					const referenceImages = await collectSeedreamReferenceImages(itemIndex, resolvedImageOperation);
-					const sequentialImageGeneration = this.getNodeParameter(
+					const sequentialImageGenerationValue = this.getNodeParameter(
 						'sequentialImageGeneration',
 						itemIndex,
-						'disabled',
-					) as SeedreamImagePayloadInput['sequentialImageGeneration'];
+						false,
+					) as boolean | SeedreamImagePayloadInput['sequentialImageGeneration'];
+					const sequentialImageGeneration = sequentialImageGenerationValue === true || sequentialImageGenerationValue === 'auto'
+						? 'auto'
+						: 'disabled';
 					const maxImages = this.getNodeParameter('maxImages', itemIndex, 15) as number;
+					const optimizePrompt = this.getNodeParameter('optimizePrompt', itemIndex, true) as boolean;
 					const imageInput: SeedreamImagePayloadInput = {
 						model: this.getNodeParameter('imageModel', itemIndex) as SeedreamImagePayloadInput['model'],
 						prompt: this.getNodeParameter('imagePrompt', itemIndex, '') as string,
@@ -271,7 +275,7 @@ export class Seedance implements INodeType {
 							'1:1',
 						) as SeedreamImagePayloadInput['imageAspectRatio'],
 						webSearch: this.getNodeParameter('webSearch', itemIndex, false) as boolean,
-						optimizePromptMode: 'standard',
+						...(optimizePrompt ? { optimizePromptMode: 'standard' as const } : {}),
 					};
 
 					if (resolvedImageOperation === 'textToImage') {

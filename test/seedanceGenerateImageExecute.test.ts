@@ -85,7 +85,7 @@ const baseParameters = {
 	imageModel: 'doubao-seedream-5-0-260128',
 	imagePrompt: 'A quiet lake at sunrise',
 	referenceImageSource: 'none',
-	sequentialImageGeneration: 'disabled',
+	sequentialImageGeneration: false,
 	maxImages: 15,
 	imageResolution: '2K',
 	imageAspectRatio: '1:1',
@@ -143,6 +143,25 @@ test('image-to-image with comma-separated URL values posts ordered URL array', a
 	]);
 });
 
+test('image-to-image splits Chinese comma-separated URL values', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			...baseParameters,
+			imageOperation: 'imageToImage',
+			referenceImageSource: 'url',
+			referenceImageUrl: 'https://example.com/a.png， https://example.com/b.png',
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+	);
+
+	await Seedance.prototype.execute.call(context);
+
+	assert.deepEqual((calls[0].body as Record<string, unknown>).image, [
+		'https://example.com/a.png',
+		'https://example.com/b.png',
+	]);
+});
+
 test('image-to-image with comma-separated binary properties posts ordered data URL array', async () => {
 	const { calls, assertedBinaryProperties, context } = createExecutionContext(
 		{
@@ -165,6 +184,62 @@ test('image-to-image with comma-separated binary properties posts ordered data U
 		`data:image/png;base64,${Buffer.from('binary-data-1').toString('base64')}`,
 		`data:image/webp;base64,${Buffer.from('binary-data-2').toString('base64')}`,
 	]);
+});
+
+test('image-to-image splits Chinese comma-separated binary property names', async () => {
+	const { calls, assertedBinaryProperties, context } = createExecutionContext(
+		{
+			...baseParameters,
+			imageOperation: 'imageToImage',
+			referenceImageSource: 'binary',
+			referenceImageBinaryProperty: 'firstImage， secondImage',
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+		{
+			firstImage: { data: Buffer.from('binary-data-1'), mimeType: 'image/png' },
+			secondImage: { data: Buffer.from('binary-data-2'), mimeType: 'image/webp' },
+		},
+	);
+
+	await Seedance.prototype.execute.call(context);
+
+	assert.deepEqual(assertedBinaryProperties, ['firstImage', 'secondImage']);
+	assert.deepEqual((calls[0].body as Record<string, unknown>).image, [
+		`data:image/png;base64,${Buffer.from('binary-data-1').toString('base64')}`,
+		`data:image/webp;base64,${Buffer.from('binary-data-2').toString('base64')}`,
+	]);
+});
+
+test('text-to-image drops stale hidden reference fields from saved workflow state', async () => {
+	const { calls, assertedBinaryProperties, context } = createExecutionContext(
+		{
+			...baseParameters,
+			imageOperation: 'textToImage',
+			referenceImageSource: 'binary',
+			referenceImageBinaryProperty: 'staleImage',
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+		{ staleImage: { data: Buffer.from('stale-binary-data'), mimeType: 'image/png' } },
+	);
+
+	await Seedance.prototype.execute.call(context);
+
+	assert.deepEqual(assertedBinaryProperties, []);
+	assert.equal('image' in (calls[0].body as Record<string, unknown>), false);
+});
+
+test('optimizePrompt=false omits optimize prompt options from image payload', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			...baseParameters,
+			optimizePrompt: false,
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+	);
+
+	await Seedance.prototype.execute.call(context);
+
+	assert.equal('optimize_prompt_options' in (calls[0].body as Record<string, unknown>), false);
 });
 
 test('mixed reference sources are posted through the image payload layer', async () => {

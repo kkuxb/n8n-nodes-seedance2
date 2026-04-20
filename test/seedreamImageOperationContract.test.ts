@@ -143,7 +143,7 @@ test('text-to-image visible fields follow the requested mode-first order', () =>
 	const visibleNames = visiblePropertyNames({
 		generationMode: 'image',
 		imageOperation: 'textToImage',
-		sequentialImageGeneration: 'auto',
+		sequentialImageGeneration: true,
 	});
 
 	assert.deepEqual(
@@ -181,7 +181,7 @@ test('image-to-image inserts reference controls after prompt optimization', () =
 		generationMode: 'image',
 		imageOperation: 'imageToImage',
 		referenceImageSource: 'url',
-		sequentialImageGeneration: 'disabled',
+		sequentialImageGeneration: false,
 	});
 	const relevantNames = visibleNames.filter((name) =>
 		[
@@ -211,6 +211,20 @@ test('reference image descriptions explain comma-separated multi-value inputs', 
 	assert.match(String(referenceImageUrl.description), /多个|多张/);
 	assert.match(String(referenceImageBinaryProperty.description), /逗号/);
 	assert.match(String(referenceImageBinaryProperty.description), /多个|多张/);
+});
+
+test('image-to-image reference source only exposes URL and binary choices', () => {
+	const referenceImageSource = findProperty('referenceImageSource');
+
+	assert.equal(referenceImageSource.default, 'url');
+	assert.deepEqual(getOptionValues(referenceImageSource), ['url', 'binary']);
+});
+
+test('group image mode is exposed as a boolean switch', () => {
+	const sequentialImageGeneration = findProperty('sequentialImageGeneration');
+
+	assert.equal(sequentialImageGeneration.type, 'boolean');
+	assert.equal(sequentialImageGeneration.default, false);
 });
 
 test('image model is fixed to Seedream 5.0 lite', () => {

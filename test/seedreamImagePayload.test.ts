@@ -86,6 +86,12 @@ test('group generation, web search, and prompt optimization map to API fields', 
 	assert.deepEqual(payload.optimize_prompt_options, { mode: 'standard' });
 });
 
+test('prompt optimization options are omitted when disabled', () => {
+	const payload = buildSeedreamImagePayload(baseInput({ optimizePromptMode: undefined }));
+
+	assert.equal('optimize_prompt_options' in payload, false);
+});
+
 test('payload keeps b64_json as the primary success path', () => {
 	const payload = buildSeedreamImagePayload(baseInput());
 

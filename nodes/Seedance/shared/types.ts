@@ -50,7 +50,7 @@ export interface SeedreamImagePayloadInput {
   imageResolution: SeedreamImageResolution;
   imageAspectRatio: SeedreamImageAspectRatio;
   webSearch: boolean;
-  optimizePromptMode: SeedreamOptimizePromptMode;
+  optimizePromptMode?: SeedreamOptimizePromptMode;
 }
 
 export interface SeedreamImageRequestSummary {
@@ -61,7 +61,7 @@ export interface SeedreamImageRequestSummary {
   sequentialImageGeneration: SeedreamSequentialImageGeneration;
   maxImages?: number;
   webSearch: boolean;
-  optimizePromptMode: SeedreamOptimizePromptMode;
+  optimizePromptMode?: SeedreamOptimizePromptMode;
 }
 
 export interface SeedreamMappedImageResult {
