@@ -1,14 +1,19 @@
 {
   "name": "n8n-nodes-seedance2",
-  "version": "0.1.0",
-  "description": "n8n community node for Seedance video task lifecycle integration.",
+  "version": "1.2.0",
+  "description": "对接火山方舟官方API，使用seedance2.0模型生成视频。或使用seedream5.0模型生成图像。",
   "license": "MIT",
   "homepage": "https://github.com/kkuxb/n8n-nodes-seedance2",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
     "seedance",
-    "video-generation"
+    "seedance2.0",
+    "seedream5.0",
+    "即梦",
+    "火山引擎",
+    "AI视频生成",
+    "AI图像生成"
   ],
   "author": {
     "name": "kkuxb"

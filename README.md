@@ -1,371 +1,305 @@
 # n8n-nodes-seedance2
 
-用于在 n8n 中接入火山引擎 Seedance 视频生成任务生命周期，以及 Seedream 5.0 lite 图片生成能力的社区节点包。
+这是一个用于 n8n 的火山方舟生成节点。你可以在同一个 `Seedance` 节点里完成两类工作：
 
-当前实现已经覆盖两条可用能力：
+- 使用 Seedance 2.0 生成视频，并管理视频任务的创建、查询、列表、取消和删除。
+- 使用 Seedream 5.0 Lite 生成图片，并直接把生成结果作为 n8n binary 图片传给后续节点。
 
-- Seedance 视频任务生命周期闭环：创建任务、查询任务、获取任务列表，以及按任务状态取消或删除任务
-- Seedream 5.0 lite 图片生成：默认返回 n8n binary 图片输出
-
-节点保持 programmatic-style 实现，凭证与节点图标继续使用当前 PNG 资源。
-
-## 当前能力
-
-- Seedance API Key 凭证
-- 创建任务
-  - 文生视频
-  - 首帧图生视频
-  - 首尾帧图生视频
-  - 支持图片 URL 或 n8n binary 输入
-- 查询单个任务
-  - 可单次查询当前状态
-  - 可在节点内每 20 秒轮询一次，直到终态或超时
-  - 成功后可选下载视频到 `binary.video`
-- 获取任务列表
-  - 支持分页或自动拉取多页
-  - 支持 `status`、`taskIds`、`model`、`serviceTier` 过滤
-- 取消 / 删除任务
-  - `queued` 任务可取消
-  - 支持删除的终态记录可删除
-- 图片生成
-  - 固定模型 `doubao-seedream-5-0-260128`
-  - 支持文生图
-  - 支持 URL、base64/data URL、binary、以及多参考图输入
-  - 支持单图与组图
-  - 默认返回单 item，多张成功图片挂到 `binary.image1`、`binary.image2`...
-
-## 平台限制
-
-- Seedance 仅支持查询最近 7 天任务历史
-- `videoUrl` 与 `lastFrameUrl` 默认 24 小时有效，拿到结果后应尽快转存
-- 图片接口在 `response_format=url` 时返回的图片 URL 同样默认 24 小时有效
-- 节点内等待模式会阻塞当前执行；长流程仍建议结合 n8n 自带 `Wait` 节点编排
+本文按“怎么在 n8n 里使用这个节点”的角度说明，不展开底层实现细节。
 
 ## 安装
 
-社区节点安装方式以你的 n8n 部署方式为准。发布到 npm 后，可按 n8n 社区节点常规方式安装本包：
+在 n8n 的社区节点管理中安装本包，或按你的部署方式安装：
 
 ```bash
 npm install n8n-nodes-seedance2
 ```
 
-本包要求 Node.js `22.x`。
+安装完成后，在 n8n 里搜索 `Seedance` 节点即可使用。
 
-## 凭证设置
+## 配置凭证
 
-节点提供一个凭证类型：`Seedance 凭证 API`。
+第一次使用前，先创建 `Seedance 凭证`。
 
 需要填写：
 
-- `API Key`：火山方舟 Seedance API Key
+- `API Key`：你的火山方舟 API Key。
 
-当前实现只需要这一项，不额外暴露 base URL。
+创建好凭证后，在 `Seedance` 节点中选择这个凭证即可。
 
-## 节点操作
+## 先选择生成模式
 
-### Create
+节点的第一个重要字段是 `生成模式`。
 
-用于创建 Seedance 视频任务。
+你有两个选择：
 
-支持模型：
+- `视频生成`：使用 Seedance 2.0 创建和管理视频任务。
+- `图像生成`：使用 Seedream 5.0 Lite 生成图片。
 
-- `Seedance 2.0`
-- `Seedance 2.0 Fast`
+选择模式后，后面的 `操作` 字段和可配置参数会随之变化。
 
-支持创建模式：
+## 视频生成
 
-- `文生视频`
-- `首帧图生视频`
-- `首尾帧图生视频`
+选择 `生成模式 = 视频生成` 后，可以在 `操作` 中选择：
 
-主要参数：
+- `创建任务`
+- `查询任务`
+- `获取任务列表`
+- `取消 / 删除任务`
 
-- `prompt`
-- `resolution`: `480p` 或 `720p`
-- `ratio`: `1:1`、`16:9`、`21:9`、`3:4`、`4:3`、`9:16`、`adaptive`
-- `duration`: `4` 到 `15` 秒，或 `-1` 自动选择
-- `generateAudio`
-- `seed`
-- `watermark`
-- `returnLastFrame`
-- `executionExpiresAfter`: `3600` 到 `259200` 秒
+### 重要限制：人脸参考图
 
-图生模式额外支持：
+**请特别注意：当前 Seedance 2.0 不支持直接上传普通的、带人脸的人物图片作为参考图。**
 
-- 首帧图片 URL
-- 尾帧图片 URL
-- 从输入 item 的 binary 属性读取图片
+**如果你希望参考图中包含人物或模特，请先使用 Seedream 5.0 Lite 生成该人物图片，再把这张由 Seedream 5.0 Lite 生成的图片作为 Seedance 2.0 的参考图使用。也就是说，Seedance 2.0 当前只采信由 Seedream 5.0 Lite 生成的带人脸参考图。**
 
-二进制图片限制：
+### 创建视频任务
 
-- 支持 `jpeg`、`png`、`webp`、`bmp`、`tiff`、`gif`
-- 单张图片最大 30 MB
+适合你要提交一个新的视频生成请求。
 
-创建结果会返回摘要字段，便于后续流程继续使用。
+操作步骤：
 
-### Get
+1. 选择 `生成模式 = 视频生成`。
+2. 选择 `操作 = 创建任务`。
+3. 选择模型，例如 `Seedance 2.0` 或 `Seedance 2.0 Fast`。
+4. 选择创建模式：`文生视频`、`首帧图生视频` 或 `首尾帧图生视频`。
+5. 填写提示词、分辨率、比例、时长等参数。
+6. 如果是图生视频，填写图片 URL，或指定输入 item 里的 binary 属性名。
+7. 执行节点，拿到返回的 `taskId`。
 
-用于根据 `taskId` 查询任务。
+常用参数说明：
 
-支持两种模式：
+- `提示词`：描述你想生成的视频内容。
+- `分辨率`：可选 `480p` 或 `720p`。
+- `宽高比`：支持 `1:1`、`16:9`、`9:16`、`adaptive` 等。
+- `视频时长`：支持 4 到 15 秒，或自动选择。
+- `生成音频`：控制是否生成有声视频。
+- `添加水印`：默认关闭。
+- `返回尾帧`：需要尾帧图时打开。
 
-- 单次查询：返回当前状态与结果
-- 等待完成：节点内每 20 秒轮询一次，默认最多等待 20 分钟
+图生视频的 binary 图片限制：
 
-等待模式可选：
+- 支持 `jpeg`、`png`、`webp`、`bmp`、`tiff`、`gif`。
+- 单张图片最大 30 MB。
 
-- `waitTimeoutMinutes`
-- `downloadVideo`
+创建成功后，后续通常会把 `taskId` 传给 `查询任务`。
 
-当 `downloadVideo = true` 且任务成功时，节点会把下载结果附加到 `binary.video`。
+### 查询视频任务
 
-### List
+适合你已经有 `taskId`，想查询生成进度或结果。
 
-用于查询最近 7 天内的任务列表。
+操作步骤：
 
-支持：
+1. 选择 `生成模式 = 视频生成`。
+2. 选择 `操作 = 查询任务`。
+3. 填写 `taskId`。
+4. 如果只想查一次当前状态，关闭等待完成。
+5. 如果希望节点自己等待结果，打开 `等待任务完成`。
+6. 如果希望成功后直接拿到视频 binary，打开 `下载视频`。
 
-- `returnAll`
-- `pageNum`
-- `pageSize`
-- `status`
-- `taskIds`，逗号分隔
-- `model`
-- `serviceTier`
+查询结果里常用字段：
 
-当前列表操作每个输入 item 返回 1 个输出 item，任务数组位于 `json.tasks`。
+- `status`：当前状态。
+- `videoUrl`：成功后的视频 URL。
+- `lastFrameUrl`：尾帧 URL，如有。
+- `isSuccess`：是否成功。
+- `isFailure`：是否失败。
+- `shouldPoll`：是否建议继续等待后再查。
+- `binary.video`：打开下载视频后，成功时会出现。
 
-### Delete
+注意：视频 URL 和尾帧 URL 默认 24 小时有效，请及时转存。
 
-用于取消或删除任务记录。
+### 获取视频任务列表
 
-行为取决于 Seedance 当前任务状态：
+适合你想查看最近生成过哪些任务。
 
-- `queued`：可取消
-- `succeeded`、`failed`、`expired`：在 Seedance 允许时可删除
-- `running`、`cancelled`：不支持
+操作步骤：
 
-### Generate Image
+1. 选择 `生成模式 = 视频生成`。
+2. 选择 `操作 = 获取任务列表`。
+3. 按需设置分页、状态、模型或任务 ID 过滤。
+4. 执行后读取 `json.tasks`。
 
-用于调用 Seedream 5.0 lite 生成图片。
+平台限制：Seedance 只支持查询最近 7 天的任务历史。
 
-当前固定模型：
+### 取消或删除视频任务
 
-- `doubao-seedream-5-0-260128`
+适合你要取消排队中的任务，或删除已结束的任务记录。
 
-当前不暴露：
+操作步骤：
 
-- `streaming`
-- `output_format`
-- `watermark`
+1. 选择 `生成模式 = 视频生成`。
+2. 选择 `操作 = 取消 / 删除任务`。
+3. 填写 `taskId`。
+4. 执行节点。
 
-节点默认使用 `response_format: b64_json` 作为主成功路径，而不是先拿 URL 再下载。这样可以直接把图片写入 n8n binary，避免把“24 小时有效 URL”作为默认依赖。
+行为取决于任务当前状态：
 
-#### 支持的输入模式
+- `queued`：可取消。
+- `succeeded`、`failed`、`expired`：在接口允许时可删除记录。
+- `running`、`cancelled`：通常不支持删除或取消。
 
-- 仅 prompt：文生图
-- 单张参考图 URL
-- 单张参考图 base64 / data URL
-- 单张参考图 binary
-- 多张参考图 mixed sources
-  - URL
-  - base64 / data URL
-  - binary
+## 图像生成
 
-#### 主要参数
+选择 `生成模式 = 图像生成` 后，可以在 `图像操作` 中选择：
 
-- `imagePrompt`
-- `referenceImageSource`
-- `sequentialImageGeneration`
-- `maxImages`
-- `imageResolution`
-- `imageAspectRatio`
-- `webSearch`
-- `optimizePromptMode`
+- `文生图`
+- `图生图`
 
-#### 输入约束
+当前图片模型固定为 Seedream 5.0 Lite。
 
-- 参考图最多 14 张
-- 参考图 binary 支持：`jpeg`、`png`、`webp`、`bmp`、`tiff`、`gif`
-- 单张参考图 binary 最大 10 MB
-- 组图模式下：参考图数量 + `maxImages` 不能超过 15
+### 文生图
 
-#### 输出行为
+适合你只用提示词生成图片。
 
-每个输入 item 只返回 1 个输出 item。
+操作步骤：
 
-成功生成的图片会附加到：
+1. 选择 `生成模式 = 图像生成`。
+2. 选择 `图像操作 = 文生图`。
+3. 确认 `图片模型` 为 Seedream 5.0 Lite。
+4. 填写 `图片提示词`。
+5. 按需打开或关闭 `优化提示词`。
+6. 选择 `图片分辨率` 和 `图片比例`。
+7. 如果需要一组相关图片，打开 `组图模式`，并填写 `最多生成图片数`。
+8. 按需打开 `启用联网搜索`。
+9. 按需打开 `添加水印`。默认关闭。
+10. 执行节点。
 
-- `binary.image1`
-- `binary.image2`
-- `binary.image3`
+生成结果会直接写入 n8n binary：
 
-JSON 中会保留：
+- 第一张图：`binary.image1`
+- 第二张图：`binary.image2`
+- 第三张图：`binary.image3`
 
-- `requestSummary`
-- `images`
-- `usage`
-- `toolCalls`
+JSON 中还会包含 `images`、`usage`、`requestSummary` 等信息，方便你在后续节点里判断结果。
 
-其中：
+### 图生图
 
-- `requestSummary` 用于保留模型、prompt、size、referenceCount、group mode 等摘要
-- `images[]` 用于保留逐图状态
-- JSON 不会包含原始 `b64_json` 内容
+适合你希望基于一张或多张参考图生成新图片。
 
-#### 失败语义
+操作步骤：
 
-- 部分失败：
-  - 只要至少有一张图片成功，节点就返回成功结果
-  - 成功图片继续写入 `binary.imageN`
-  - 失败图片记录在 `json.images[]`
-- 全部失败：
-  - 节点抛错
-  - 错误消息会保留逐图失败原因
+1. 选择 `生成模式 = 图像生成`。
+2. 选择 `图像操作 = 图生图`。
+3. 填写 `图片提示词`。
+4. 按需打开或关闭 `优化提示词`。
+5. 选择 `参考图来源`。
+6. 如果选择 `图片 URL`，在 `参考图 URL` 中填写一个或多个 URL。
+7. 如果选择 `二进制数据`，在 `参考图 Binary 属性` 中填写一个或多个 binary 属性名。
+8. 选择分辨率、比例、组图模式、联网搜索和水印设置。
+9. 执行节点。
 
-#### 24 小时限制说明
+多个参考图的填写方式：
 
-虽然当前实现默认使用 `b64_json` 直接返回图片二进制，不依赖 URL 下载作为主路径，但 Seedream 官方在 `response_format=url` 模式下返回的图片 URL 默认仍只有 `24 hours` / `24 小时` 有效期。如果后续你改为 URL 流程或自行保存 URL，应及时转存。
+- 英文逗号：`https://example.com/a.png, https://example.com/b.png`
+- 中文逗号：`https://example.com/a.png，https://example.com/b.png`
+- Binary 属性名也支持同样写法：`image1,image2` 或 `image1，image2`
 
-## 推荐工作流
+参考图限制：
 
-### 工作流一：提交任务后用 Wait 轮询
+- 最多 14 张参考图。
+- Binary 图片支持 `jpeg`、`png`、`webp`、`bmp`、`tiff`、`gif`。
+- 单张 binary 参考图最大 10 MB。
+- 如果打开组图模式，参考图数量加最多生成图片数不能超过 15。
 
-适合更可控的 n8n 编排。
+### 图片水印
 
-1. `Seedance` -> `Create`
+图片生成的 `添加水印` 默认关闭。
+
+如果保持默认设置，请求会显式关闭图片水印，避免官方接口默认添加右下角“AI生成”标识。
+
+只有当你主动打开 `添加水印` 时，节点才会请求生成带水印的图片。
+
+## 常见工作流示例
+
+### 示例一：生成视频并等待完成
+
+1. 添加 `Seedance` 节点。
+2. 选择 `视频生成` -> `创建任务`。
+3. 填写提示词并执行，得到 `taskId`。
+4. 添加第二个 `Seedance` 节点。
+5. 选择 `视频生成` -> `查询任务`。
+6. 把第一个节点输出的 `taskId` 填入查询节点。
+7. 打开 `等待任务完成`。
+8. 如果希望直接拿到文件，打开 `下载视频`。
+
+适合简单流程。缺点是节点会一直等待到任务完成或超时。
+
+### 示例二：生成视频后用 Wait 节点轮询
+
+1. `Seedance` -> `视频生成` -> `创建任务`
 2. `Wait`
-3. `Seedance` -> `Get`
-4. `IF` 根据返回状态分支
+3. `Seedance` -> `视频生成` -> `查询任务`
+4. `IF` 判断 `isSuccess`、`isFailure` 或 `shouldPoll`
+5. 如果 `shouldPoll = true`，回到 `Wait` 后继续查
 
-建议判断：
+适合更稳定、更可控的生产工作流。
 
-- `shouldPoll = true`：继续等待后重查
-- `isSuccess = true`：处理视频 URL 或已下载的 binary
-- `isFailure = true`：读取 `error.code` 和 `error.message`
+### 示例三：文生图并发送到下游节点
 
-### 工作流二：节点内等待直到完成
+1. `Seedance` -> `图像生成` -> `文生图`
+2. 填写提示词，例如“一张电影感的产品海报，柔和光线，浅色背景”
+3. 选择比例和分辨率
+4. 执行节点
+5. 在下游节点读取 `binary.image1`
 
-适合短任务或简单流程。
+如果打开组图模式，下游可以继续读取 `binary.image2`、`binary.image3` 等。
 
-1. `Seedance` -> `Create`
-2. `Seedance` -> `Get`
-3. 打开 `等待任务完成`
-4. 按需打开 `下载视频`
+### 示例四：用参考图生成新图片
 
-注意：这种模式会在 n8n 执行期间持续占用该节点，直到任务完成或超时。
+1. `Seedance` -> `图像生成` -> `图生图`
+2. 填写提示词，说明你希望如何改造参考图
+3. 选择 `参考图来源 = 图片 URL` 或 `二进制数据`
+4. 填写一个或多个 URL / binary 属性名
+5. 执行节点
+6. 在下游读取 `binary.image1`
 
-### 工作流三：拉取最近任务并清理
+## 输出怎么看
 
-1. `Seedance` -> `List`
-2. 读取 `json.tasks`
-3. 根据 `status` 或时间过滤
-4. 对符合条件的任务调用 `Delete`
+### 视频创建输出
 
-### 工作流四：Generate Image
-
-适合直接在 n8n 内拿到图片 binary。
-
-1. `Seedance` -> `Generate Image`
-2. 输入 prompt
-3. 按需配置参考图来源：URL / base64 / binary / 多参考图
-4. 按需配置组图、联网搜索、提示词优化、分辨率与比例
-5. 在下游节点读取：
-   - `binary.image1`
-   - `binary.image2`
-   - `json.images[]`
-   - `json.usage`
-
-## 输出结构
-
-### Create 输出
+创建任务后重点看：
 
 ```json
 {
   "taskId": "task_xxx",
   "status": "queued",
-  "createdAt": 1712345678,
   "requestSummary": {
     "model": "doubao-seedance-2-0-260128",
     "prompt": "...",
     "resolution": "720p",
     "ratio": "adaptive",
-    "duration": 5,
-    "generateAudio": true
-  },
-  "raw": {}
+    "duration": 5
+  }
 }
 ```
 
-### Get 输出
+### 视频查询输出
+
+查询成功后重点看：
 
 ```json
 {
   "taskId": "task_xxx",
-  "model": "doubao-seedance-2-0-260128",
   "status": "succeeded",
-  "createdAt": 1712345678,
-  "updatedAt": 1712345700,
   "videoUrl": "https://...",
   "lastFrameUrl": "https://...",
-  "usage": {},
-  "error": null,
   "isTerminal": true,
   "isSuccess": true,
   "isFailure": false,
-  "shouldPoll": false,
-  "retention": {
-    "taskHistoryDays": 7,
-    "assetUrlHours": 24,
-    "message": "Seedance 仅支持查询最近 7 天任务，videoUrl/lastFrameUrl 默认 24 小时有效，请及时转存。"
-  },
-  "raw": {}
+  "shouldPoll": false
 }
 ```
 
-等待模式还会附加：
-
-- `timedOut`
-- `pollCount`
-- `waitedMs`
-
-如果启用 `downloadVideo`，还会返回：
+如果打开了下载视频，还会有：
 
 - `binary.video.data`
 - `binary.video.mimeType`
 - `binary.video.fileName`
 
-### List 输出
+### 图片生成输出
 
-```json
-{
-  "tasks": [],
-  "count": 0,
-  "returnAll": true,
-  "pageNum": 1,
-  "pageSize": 100,
-  "retention": {
-    "taskHistoryDays": 7,
-    "assetUrlHours": 24,
-    "message": "Seedance 仅支持查询最近 7 天任务，videoUrl/lastFrameUrl 默认 24 小时有效，请及时转存。"
-  }
-}
-```
-
-`tasks` 中的每一项与 `Get` 的单任务输出结构一致。
-
-### Delete 输出
-
-```json
-{
-  "success": true,
-  "taskId": "task_xxx",
-  "action": "deleted_or_cancelled",
-  "message": "已向 Seedance 提交取消或删除请求。实际结果取决于任务当前状态。"
-}
-```
-
-### Generate Image 输出
+图片生成后重点看：
 
 ```json
 {
@@ -386,87 +320,56 @@ JSON 中会保留：
       "mimeType": "image/png",
       "fileName": "seedream-image-1.png"
     }
-  ],
-  "usage": {
-    "generated_images": 1
-  },
-  "toolCalls": {
-    "web_search": 0
-  }
+  ]
 }
 ```
 
-同时 binary 输出中会附加：
+真正的图片文件在 binary 里：
 
-- `binary.image1.data`
-- `binary.image1.mimeType`
-- `binary.image1.fileName`
-
-如果组图返回多张成功图片，则继续追加：
-
+- `binary.image1`
 - `binary.image2`
 - `binary.image3`
 
-如果发生部分失败，失败项不会生成 binary，但会保留在 `json.images[]` 中。
+## 失败时怎么处理
 
-## 错误与失败输出
+### 视频任务失败
 
-当节点启用 n8n 的 continue-on-fail 时，失败项会返回：
+查询任务时读取：
 
-```json
-{
-  "error": {
-    "message": "..."
-  },
-  "status": "failed"
-}
-```
+- `status`
+- `error.code`
+- `error.message`
+- `isFailure`
+
+如果 `shouldPoll = true`，说明任务还没结束，可以等待后再查。
+
+### 图片部分失败
+
+如果一次生成多张图片，只要至少一张成功，节点会返回成功结果。
+
+成功图片会写入 `binary.imageN`。
+
+失败图片会记录在 `json.images[]` 中。
+
+如果全部图片都失败，节点会抛错，并尽量保留每张图的失败原因。
+
+## 平台限制
+
+- Seedance 任务历史只支持查询最近 7 天。
+- 视频结果 URL 和尾帧 URL 默认 24 小时有效。
+- Seedream 在 URL 输出模式下的图片 URL 默认也只有 24 小时有效。
+- 本节点默认把图片作为 binary 输出，减少对 24 小时 URL 的依赖，但你仍应及时把重要产物转存到自己的存储系统。
 
 ## 本地开发
+
+如果你是在本地调试这个节点：
 
 ```bash
 npm install
 npm run build
-npm run lint
-```
-
-本项目固定使用 Node.js `22.x`。
-
-本地联调：
-
-```bash
 npm run dev
 ```
 
-`npm run dev` 会：
+项目使用 Node.js `22.x`。
 
-- 启动 `n8n-node dev --external-n8n`
-- 启动一个固定版本的本地 n8n 开发服务
-
-在 Windows 上，脚本会显式检查当前 Node 主版本是否为 22，不符合时直接退出。
-
-## 打包与发布基础
-
-常用命令：
-
-```bash
-npm run build
-npm run lint
-```
-
-包元数据已经按社区节点方式注册：
-
-- 节点入口：`dist/nodes/Seedance/Seedance.node.js`
-- 凭证入口：`dist/credentials/SeedanceApi.credentials.js`
-
-发布前请至少确认：
-
-- `README.md` 与当前行为一致
-- `npm run build` 通过
-- 包版本号已正确更新
-
-注意：当前仓库按项目要求使用 PNG 图标资源。n8n 官方 lint 规则可能要求 SVG 图标，因此在保持 PNG 图标的前提下，`npm run lint` 可能会报告图标格式相关错误。若需要严格通过 n8n lint，需要将节点和凭证图标切回 SVG。
-
-## 本地 API 文档
-
-`APIdocs/` 目录仅保留在本地工作区，用于开发参考，不再纳入 Git 跟踪，也不会作为仓库内容发布。
+注意：当前仓库按项目要求使用 PNG 图标资源。n8n 官方 lint 规则可能要求 SVG 图标，因此在保持 PNG 图标的前提下，`npm run lint` 可能会报告图标格式相关错误。
