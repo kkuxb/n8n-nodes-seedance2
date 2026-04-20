@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-seedance2",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "对接火山方舟官方API，使用seedance2.0模型生成视频。或使用seedream5.0模型生成图像。",
   "license": "MIT",
   "homepage": "https://github.com/kkuxb/n8n-nodes-seedance2",

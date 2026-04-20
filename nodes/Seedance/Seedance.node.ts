@@ -37,7 +37,6 @@ export class Seedance implements INodeType {
 				name: 'seedanceApi',
 				displayName: 'Seedance 凭证',
 				required: true,
-				testedBy: 'seedanceApi',
 			},
 		],
 		properties: [

@@ -18,6 +18,7 @@ dist/
 .npm-cache/
 .npm-n8n-cache/
 .npm-n8n-cache-node22/
+.n8n-dev-server/
 
 # Environment and local secrets
 .env
