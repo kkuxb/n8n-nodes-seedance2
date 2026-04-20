@@ -165,7 +165,7 @@ Plans:
 
 Plans:
 - [x] 12-01-PLAN.md — Refactor the node description into mode-first video/image operation selectors and lock requested image field ordering with contract tests
-- [ ] 12-02-PLAN.md — Wire the refactored image operations into execution, including comma-separated multi-reference inputs and final image/video regression coverage
+- [x] 12-02-PLAN.md — Wire the refactored image operations into execution, including comma-separated multi-reference inputs and final image/video regression coverage
 **UI hint**: yes
 
 ## Progress
@@ -183,4 +183,4 @@ Plans:
 | 09. Image Payload Builder, Input Normalization & Validation | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 10. Image Execution Path, Binary Output & Partial-Failure Mapping | v1.2 | 2/2 | Complete | 2026-04-19 |
 | 11. Regression Coverage, Documentation & Release Hardening | v1.2 | 2/2 | Complete | 2026-04-19 |
-| 12. Image Generation Mode & Operation UX Refactor | v1.2 | 1/2 | In Progress|  |
+| 12. Image Generation Mode & Operation UX Refactor | v1.2 | 2/2 | Complete   | 2026-04-20 |
