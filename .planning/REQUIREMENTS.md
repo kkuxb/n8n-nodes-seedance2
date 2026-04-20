@@ -20,7 +20,7 @@
 - [x] **IMG-01**: 用户可以在现有 `Seedance` 节点中选择新的图片生成 operation。
 - [x] **IMG-02**: 用户可以使用固定模型 `doubao-seedream-5-0-260128` 发起图片生成请求。
 - [x] **IMG-03**: 用户可以只提供 prompt 执行文生图。
-- [ ] **IMG-04**: 用户可以通过公开 UI 使用 URL 或 binary 传入单张参考图；base64/data URL 仅保留内部兼容 fallback，不作为当前 v1.2 公共入口。
+- [x] **IMG-04**: 用户可以通过公开 UI 使用 URL 或 binary 传入单张参考图；base64/data URL 仅保留内部兼容 fallback，不作为当前 v1.2 公共入口。
 - [x] **IMG-05**: 用户可以在组图/融合场景下传入多张参考图，并满足官方 2-14 张输入及总张数不超过 15 的约束。
 - [x] **IMG-06**: 用户可以切换单图模式与组图模式；当启用组图时可设置 `max_images`。
 - [x] **IMG-07**: 用户可以配置 `web_search`、`optimize_prompt_options.mode` 与 `size`。
@@ -38,7 +38,7 @@
 ## Validation Requirements
 
 - [x] **VAL-IMG-01**: 对参考图输入数量、MIME 类型、大小与来源进行运行时校验，避免向 API 发送明显无效请求。
-- [ ] **VAL-IMG-02**: 对 `size` 做 Seedream 5.0 lite 允许值与像素格式校验，并在 gap closure phase 中补齐 formal verification trace。
+- [x] **VAL-IMG-02**: 对 Seedream 5.0 lite 的分辨率档位、比例枚举与官方推荐像素组合做运行时校验，并已有 formal verification trace。
 - [x] **VAL-IMG-03**: 对组图模式下 `max_images`、参考图数量和总图数上限做联合校验。
 - [x] **VAL-IMG-04**: 当 API 返回逐图失败信息时，节点输出必须保留失败细节，而不是静默丢弃。
 
