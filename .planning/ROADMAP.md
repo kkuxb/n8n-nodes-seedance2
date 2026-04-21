@@ -25,7 +25,7 @@
 | 17 | Reference Video Execution | 1/1 | Complete   | 2026-04-21 |
 | 18 | Compatibility, Docs, Release | 2/2 | Complete   | 2026-04-21 |
 | 19 | Reference Image Validation Hardening | 1/1 | Complete   | 2026-04-21 |
-| 20 | UX and Validation Verification Backfill | 0/3 | Pending | Pending |
+| 20 | UX and Validation Verification Backfill | 3/3 | Complete    | 2026-04-21 |
 | 21 | Reference Video Verification Backfill | 0/2 | Pending | Pending |
 | 22 | Release Verification and Docs Alignment | 0/2 | Pending | Pending |
 
@@ -147,7 +147,12 @@ Plans:
 
 **Gap Closure:** Closes missing VERIFICATION.md blockers for phases 14 and 15.
 
-**Plans:** 0/0 plans complete
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 20-01-PLAN.md — 为 Phase 14 产出正式 UX verification 报告并补齐 UX-04 证据闭环
+- [x] 20-02-PLAN.md — 起草 Phase 15 validator verification 报告，覆盖 prompt omission 与 unsupported input guardrails
+- [x] 20-03-PLAN.md — 完成 Phase 15 payload/request-summary verification 并收口 requirement 级审计结论
 
 **Success criteria:**
 1. 产出 `14-VERIFICATION.md`，验证五种 create mode、字段可见性和关键提示文案合同。
@@ -157,13 +162,16 @@ Plans:
 
 ### Phase 21: Reference Video Verification Backfill
 
-**Goal:** 为 Phase 17 补齐正式 verification 产物，确认参考视频 execute 链路和 requirement 证据闭环。
+**Goal:** 为 Phase 17 补齐正式 reference-video verification 产物，确认参考视频 create execute 链路和 `CRTK-10` / `CRTK-11` 证据闭环；不扩展到 lifecycle、release 或 docs verification。
 
 **Requirements:** CRTK-10, CRTK-11
 
 **Gap Closure:** Closes missing VERIFICATION.md blocker for phase 17.
 
-**Plans:** 0/0 plans complete
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 21-01-PLAN.md — 为 Phase 17 产出正式 reference-video verification 报告并闭合 CRTK-10/11 证据链
 
 **Success criteria:**
 1. 产出 `17-VERIFICATION.md`，验证参考视频模式的 URL/`asset://` 输入、数量限制、顺序映射和 create response 兼容性。
