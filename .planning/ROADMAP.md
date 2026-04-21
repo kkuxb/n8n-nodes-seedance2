@@ -24,7 +24,7 @@
 | 16 | Reference Image Execution | 1/1 | Complete   | 2026-04-21 |
 | 17 | Reference Video Execution | 1/1 | Complete   | 2026-04-21 |
 | 18 | Compatibility, Docs, Release | 2/2 | Complete   | 2026-04-21 |
-| 19 | Reference Image Validation Hardening | 0/4 | Pending | Pending |
+| 19 | Reference Image Validation Hardening | 1/1 | Complete   | 2026-04-21 |
 | 20 | UX and Validation Verification Backfill | 0/3 | Pending | Pending |
 | 21 | Reference Video Verification Backfill | 0/2 | Pending | Pending |
 | 22 | Release Verification and Docs Alignment | 0/2 | Pending | Pending |
@@ -128,7 +128,10 @@ Plans:
 
 **Gap Closure:** Closes audit integration gap from Phase 14/15 -> Phase 16 and the broken `参考图生视频` flow.
 
-**Plans:** 0/0 plans complete
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 19-01-PLAN.md — 加固 `reference_images` 空输入本地校验，并补齐 validator/execute 边界回归闭环
 
 **Success criteria:**
 1. Validator 会拒绝 `reference_images` 模式下空的 URL/asset 项，以及其他明显无效的空参考图输入，而不是把空内容发给 API。

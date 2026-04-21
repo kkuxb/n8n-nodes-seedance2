@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Seedream 5.0 lite image generation and UX iteration
-status: archived
-stopped_at: Archived milestone v1.2
-last_updated: "2026-04-20T08:45:00.000Z"
-last_activity: 2026-04-20 -- Milestone v1.2 archived and ready for next-milestone definition
+milestone: v1.3
+milestone_name: 多模态参考视频生成补全
+status: verifying
+stopped_at: Completed phase 18 execution
+last_updated: "2026-04-21T06:20:56.138Z"
+last_activity: 2026-04-21
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 9
+  completed_phases: 6
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -18,17 +18,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-19)
+See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** Planning the next milestone
+**Current focus:** Phase 19 — reference-image-validation-hardening
 
 ## Current Position
 
-Phase: none
-Plan: none
-Status: Milestone archived
-Last activity: 2026-04-20 -- Milestone v1.2 archived and ready for next-milestone definition
+Phase: 19 (reference-image-validation-hardening) — READY FOR VERIFICATION
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-21
 
 Progress: [██████████] 100%
 
@@ -59,6 +59,14 @@ Progress: [██████████] 100%
 | Phase 12 P01 | 7min | 3 tasks | 8 files |
 | Phase 12 P02 | 8 min | 3 tasks | 5 files |
 | Phase 13 P02 | 1 min | 2 tasks | 1 files |
+| Phase 14 P01 | 1 min | 3 tasks | 3 files |
+| Phase 15 P01 | 1 min | 2 tasks | 3 files |
+| Phase 15 P02 | 1 min | 2 tasks | 2 files |
+| Phase 16 P01 | 1 min | 3 tasks | 2 files |
+| Phase 17 P01 | 1 min | 3 tasks | 3 files |
+| Phase 18 P01 | 1 min | 2 tasks | 2 files |
+| Phase 18 P02 | 1 min | 2 tasks | 3 files |
+| Phase 19 P01 | 5 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -81,6 +89,7 @@ Progress: [██████████] 100%
 - Close v1.2 audit gaps by reconciling planning artifacts to shipped behavior instead of re-expanding the public image reference UI.
 - Keep the new audit-closing regression at the execute() boundary so real node runtime request shaping is verified, not just mapper behavior.
 - Reuse the Phase 12 focused regression family unchanged after adding the new assertion so image and video contracts remain jointly verified.
+- Keep reference_images empty-item rejection in validateCreateInput() rather than mapper code so invalid user input is blocked before payload assembly and HTTP dispatch.
 
 ### Roadmap Evolution
 
@@ -89,7 +98,7 @@ Progress: [██████████] 100%
 
 ### Pending Todos
 
-- Run `/gsd-new-milestone` to define the next milestone and create a fresh requirements file.
+- Run `/gsd-plan-phase 14` to plan the Create-Mode UX Contract phase.
 
 ### Blockers/Concerns
 
@@ -102,9 +111,10 @@ Progress: [██████████] 100%
 | ID | Date | Task | Status | Notes |
 |----|------|------|--------|-------|
 | Q001 | 2026-04-19 | Update Seedance branding assets and remove redundant resource selector | Completed with blocker | Swapped node and credential branding references to PNG assets from `APIdocs/1776526732352_download.jpg`; removed the single-option `resource` selector and its dependent display conditions. `npm run build` passed. `npm run lint` still fails because n8n community-node validation requires SVG icons, so PNG branding is incompatible with current lint rules. |
+| 260421-h98 | 2026-04-21 | Seedance 2.0 add 1080p resolution option while keeping Seedance 2.0 Fast at 480p/720p | Complete | Updated video create resolution options and validator rules so `1080p` is available only for `doubao-seedance-2-0-260128`. Verified with `npm run build` and `node --test "test/createPayload.test.ts"`. |
 
 ## Session Continuity
 
-Last session: 2026-04-20T08:45:00.000Z
-Stopped at: Archived milestone v1.2
+Last session: 2026-04-21T06:20:56.134Z
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None
