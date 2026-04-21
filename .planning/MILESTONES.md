@@ -1,5 +1,30 @@
 # Milestones
 
+## v1.3 多模态参考视频生成补全 (Shipped: 2026-04-21)
+
+**Phases completed:** 10 phases, 14 plans, 31 tasks
+
+**Code tag:** `v1.3`
+
+**Key accomplishments:**
+
+- Seedance video create UI 现已锁定五种创建模式，并为参考图/参考视频模式补齐了诚实且可回归验证的字段合同。
+- Seedance create validator 现已显式识别参考图/参考视频模式，并会在本地拦截数量越界、互斥冲突、参考音频和 binary/base64 参考视频等明显无效组合。
+- Seedance create payload builder 现已能够把参考图/参考视频输入稳定映射为 `reference_image` / `reference_video` API 内容项，并输出不泄露原始引用内容的低风险请求摘要。
+- Seedance video create execute 分支现已正式接入 `referenceImageItems`，可以按用户配置顺序提交混合 URL、`asset://` 和 binary 的参考图生视频请求。
+- Seedance video create execute 分支现已正式接入 `referenceVideoItems`，可以按用户配置顺序提交 URL / `asset://` 参考视频生视频请求，并保持既有 create 输出结构不变。
+- Phase 18 现已提供顺序执行的 `npm run test:phase18` 发布验证命令，并扩展 legacy video lifecycle 回归覆盖 get/list/delete/wait/download 兼容性。
+- README 和 Seedance create 字段说明现已对齐已发布的参考图/参考视频能力，明确写出配置步骤、限制、排除项和发布验证方式。
+- reference_images 本地校验现在拒绝空 URL/asset/binary 占位，并通过 execute 回归证明无效请求不会触发 create HTTP 调用。
+- Phase 14 的五模式 create UX 合同现已具备正式 verification 报告，UX-04 由代码与回归测试的逐行证据闭环支撑。
+- Phase 15 validator verification report 现已补齐 prompt omission 与 unsupported multimodal input rejection 的正式证据，并明确把 payload/request-summary 收口保留给 20-03。
+- Phase 15 verification now proves validator guardrails plus ordered payload mapping and safe request-summary redaction for `VAL-REF-02` and `CRTK-12`.
+- Phase 17 now has a formal, line-cited verification report proving reference-video create execution for `CRTK-10` and `CRTK-11` from shipped UI, execute, payload, validator, and regression evidence.
+- 为 Phase 18 补齐正式 verification 报告，并把 README 的视频分辨率说明纠正为与 shipped Seedance 2.0 / Fast 合同一致。
+- Phase 16 and Phase 21 now have formal verification artifacts, and the refreshed v1.3 milestone audit marks all in-scope phase directories verified.
+
+---
+
 ## v1.2 Seedream 5.0 lite image generation, UX iteration, and audit reconciliation (Shipped: 2026-04-20)
 
 **Phases completed:** 6 phases, 11 plans, 26 tasks
