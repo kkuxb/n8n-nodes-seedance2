@@ -1,0 +1,73 @@
+# Requirements: n8n-nodes-seedance2
+
+**Defined:** 2026-04-20
+**Milestone:** v1.3 多模态参考视频生成补全
+**Core Value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
+
+## v1 Requirements
+
+### Reference Image Video
+
+- [ ] **CRTK-07**: 用户可以通过 `参考图生视频` 模式创建多模态参考生视频任务。
+- [ ] **CRTK-08**: 用户可以在 `参考图生视频` 模式下按顺序提供 1 到 9 张参考图，并保持该顺序映射到 API 请求内容。
+- [ ] **CRTK-09**: 用户可以在 `参考图生视频` 模式下复用现有图片输入体验，通过 URL、`asset://` 素材 ID 或 n8n binary 属性提供参考图。
+
+### Reference Video
+
+- [ ] **CRTK-10**: 用户可以通过 `参考视频生视频` 模式创建多模态参考生视频任务。
+- [ ] **CRTK-11**: 用户可以在 `参考视频生视频` 模式下提供 1 到 3 个参考视频 URL 或 `asset://` 素材 ID。
+- [ ] **CRTK-12**: 用户在参考图或参考视频模式下可以省略提示词，节点仍能按合法的多模态参考任务提交请求。
+
+### UX and Validation
+
+- [ ] **UX-04**: 用户可以在节点 UI 中清晰区分 `文生视频`、`首帧图生视频`、`首尾帧图生视频`、`参考图生视频` 和 `参考视频生视频` 的用途。
+- [ ] **UX-05**: 用户可以在新模式下看到明确的字段说明和限制提示，包括参考素材数量、URL 时效、最近 7 天历史限制、真人脸限制以及参考模式与首帧模式的区别。
+- [ ] **VAL-REF-01**: 节点会在本地校验新模式的模型支持、必填参考素材数量和场景互斥关系，并在无效组合时返回清晰错误，而不是把明显错误直接发给 API。
+- [ ] **VAL-REF-02**: 节点不会在本 milestone 接受参考图 + 参考视频混合输入、参考音频输入或 binary/base64 参考视频输入。
+- [ ] **COMP-01**: 新模式创建的任务保持与既有 `get/list/delete/wait/download` 生命周期能力兼容，且不会回退现有视频与图片能力。
+
+## v2 Requirements
+
+### Deferred Multimodal Extensions
+
+- **MMOD-01**: 用户可以在同一个多模态参考生视频任务里同时提供参考图和参考视频。
+- **MMOD-02**: 用户可以在多模态参考生视频任务里提供参考音频。
+- **MMOD-03**: 用户可以通过 n8n binary 或 base64 直接提供参考视频，而不依赖外部 URL 或 `asset://` 素材 ID。
+
+### Broader API Parity
+
+- **MMOD-04**: 用户可以使用更完整的多模态高级能力，例如视频编辑/延长、`callback_url`、`tools`、`safety_identifier` 等扩展参数。
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| 参考图 + 参考视频组合输入 | 本 milestone 聚焦先补齐两种单一参考主路径，避免一次引入过多参数组合与验证分支 |
+| 参考音频输入 | 超出当前补全目标，会显著扩大参数矩阵与素材约束 |
+| Binary/Base64 参考视频上传 | 当前本地 API 文档未把视频 base64 作为主路径说明，且会带来较高请求体和内存压力 |
+| 通用原始 `content[]` 构建器 | 会让节点退化为 HTTP 透传器，破坏现有 n8n 友好 UX |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CRTK-07 | Phase 19 | Pending |
+| CRTK-08 | Phase 19 | Pending |
+| CRTK-09 | Phase 19 | Pending |
+| CRTK-10 | Phase 21 | Pending |
+| CRTK-11 | Phase 21 | Pending |
+| CRTK-12 | Phase 20 | Pending |
+| UX-04 | Phase 20 | Pending |
+| UX-05 | Phase 22 | Pending |
+| VAL-REF-01 | Phase 19 | Pending |
+| VAL-REF-02 | Phase 20 | Pending |
+| COMP-01 | Phase 22 | Pending |
+
+**Coverage:**
+- v1 requirements: 11 total
+- Mapped to phases: 11
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-04-20*
+*Last updated: 2026-04-21 after milestone audit gap closure planning*
