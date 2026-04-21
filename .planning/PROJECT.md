@@ -4,7 +4,7 @@
 
 **Last shipped version:** v1.2
 **Last shipped date:** 2026-04-20
-**Status:** v1.2 shipped; ready to define the next milestone.
+**Status:** Defining milestone v1.3 for remaining multimodal video-generation modes.
 
 v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` node while preserving the previously shipped Seedance video lifecycle. The node now supports mode-first video/image UX, prompt-only and reference-driven image generation, default binary image output, grouped image generation constraints, and execute-level regression coverage for image request shaping.
 
@@ -16,12 +16,34 @@ v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` n
 
 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
 
-## Next Milestone Goals
+## Current Milestone: v1.3 多模态参考视频生成补全
 
-- 通过 `/gsd-new-milestone` 定义下一阶段目标，而不是继续沿用 v1.2 的需求文件。
-- 评估是否清理仅用于内部兼容的图片参考图 fallback 路径。
-- 评估是否处理 PNG 图标 lint 技术债，或继续接受该项目约束。
-- 评估是否继续增强本地开发 runtime 的稳定性与发布流程。
+**Goal:** 补齐当前未完成的多模态视频生成能力，让 n8n 用户能以可发布的节点体验使用参考图生视频和参考视频生视频。
+
+**Target features:**
+- 参考图生视频
+- 参考视频生视频
+- 与现有视频 lifecycle、参数 UX、运行时校验、文档和测试保持一致的 ship-ready 交付
+
+## Requirements
+
+### Validated
+
+- ✓ 用户可以通过 Seedance 节点完成文生视频、首帧图生视频、首尾帧图生视频，以及查询、列表、取消/删除任务生命周期能力。 — v1.0-v1.1
+- ✓ 用户可以在 Wait For Completion 场景下轮询任务，并在成功时可选下载 `binary.video`。 — v1.1
+- ✓ 用户可以在同一节点内完成 Seedream 图片生成，并获得稳定的 mode-first UX 与默认 binary 图片输出。 — v1.2
+
+### Active
+
+- [ ] 用户可以通过参考图创建多模态参考生视频任务。
+- [ ] 用户可以通过参考视频创建多模态参考生视频任务。
+- [ ] 上述新模式与既有视频 create/get/list/delete、文档提示和回归验证保持一致且不回退。
+
+### Out of Scope
+
+- 参考图 + 参考视频组合输入模式 — 本次 milestone 聚焦先补齐两种单一参考主路径，避免一次引入过多参数组合。
+- 参考音频输入 — 当前里程碑只补图像/视频两类多模态参考，不扩展到音频。
+- 独立新节点或新 credentials — 继续复用现有 `Seedance` 节点与 `SeedanceApi` 凭证。
 
 ## Constraints
 
@@ -61,6 +83,7 @@ This document evolves at milestone boundaries.
 - After each shipped milestone, update Current State, Core Value, Constraints, and Key Decisions.
 - Use archived milestone files for detailed historical roadmap and requirement context.
 - Start each new milestone with `/gsd-new-milestone` so requirements stay milestone-scoped and context cost remains bounded.
+- At milestone start, update the Current Milestone section and Active requirements before generating a new scoped `REQUIREMENTS.md`.
 
 ---
-*Last updated: 2026-04-20 after archiving v1.2 milestone*
+*Last updated: 2026-04-20 after starting milestone v1.3 definition*

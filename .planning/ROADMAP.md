@@ -5,7 +5,7 @@
 - ✅ **v1.0 milestone** — Phases 1-3 (shipped 2026-04-17; archived in [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md))
 - ✅ **v1.1 milestone** — Phases 04-07 (shipped 2026-04-19; archived in [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md))
 - ✅ **v1.2 milestone** — Phases 08-13 Seedream image generation, UX iteration, and audit reconciliation (shipped 2026-04-20; archived in [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md))
-- 🔄 **v1.3 milestone** — Phases 14-22 多模态参考视频生成补全 (planned 2026-04-20)
+- 🔄 **v1.3 milestone** — Phases 14-23 多模态参考视频生成补全 (planned 2026-04-20)
 
 ## Current Milestone: v1.3 多模态参考视频生成补全
 
@@ -26,8 +26,9 @@
 | 18 | Compatibility, Docs, Release | 2/2 | Complete   | 2026-04-21 |
 | 19 | Reference Image Validation Hardening | 1/1 | Complete   | 2026-04-21 |
 | 20 | UX and Validation Verification Backfill | 3/3 | Complete    | 2026-04-21 |
-| 21 | Reference Video Verification Backfill | 0/2 | Pending | Pending |
-| 22 | Release Verification and Docs Alignment | 0/2 | Pending | Pending |
+| 21 | Reference Video Verification Backfill | 1/1 | Complete    | 2026-04-21 |
+| 22 | Release Verification and Docs Alignment | 1/1 | Complete    | 2026-04-21 |
+| 23 | Phase Verification Artifact Backfill | 0/0 | Planned | - |
 
 ## Phase Details
 
@@ -168,10 +169,10 @@ Plans:
 
 **Gap Closure:** Closes missing VERIFICATION.md blocker for phase 17.
 
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 21-01-PLAN.md — 为 Phase 17 产出正式 reference-video verification 报告并闭合 CRTK-10/11 证据链
+- [x] 21-01-PLAN.md — 为 Phase 17 产出正式 reference-video verification 报告并闭合 CRTK-10/11 证据链
 
 **Success criteria:**
 1. 产出 `17-VERIFICATION.md`，验证参考视频模式的 URL/`asset://` 输入、数量限制、顺序映射和 create response 兼容性。
@@ -186,12 +187,34 @@ Plans:
 
 **Gap Closure:** Closes missing VERIFICATION.md blocker for phase 18 and the README 1080p doc mismatch noted in the audit.
 
-**Plans:** 0/0 plans complete
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 22-01-PLAN.md — 产出 `18-VERIFICATION.md` 并对齐 README 的 1080p 分辨率说明与发布验证结论
 
 **Success criteria:**
 1. 产出 `18-VERIFICATION.md`，验证 README、字段说明、`test:phase18` 与 lifecycle compatibility 证据闭环。
 2. README 的分辨率说明与当前 UI/validator 对齐，明确 Seedance 2.0 支持 `1080p`，Fast 仅支持 `480p` 和 `720p`。
 3. Verification 文件覆盖 `UX-05` 与 `COMP-01`，并保留 PNG icon lint accepted exception 的当前发布结论。
+
+### Phase 23: Phase Verification Artifact Backfill
+
+**Goal:** 为里程碑范围内仍缺失 phase-level verification 的目录补齐正式 `VERIFICATION.md` 产物，关闭 milestone audit 的最后 workflow blocker。
+
+**Requirements:** None (phase-level audit gate only)
+
+**Gap Closure:** Closes missing `16-VERIFICATION.md` and `21-VERIFICATION.md` blockers from `v1.3-v1.3-MILESTONE-AUDIT.md`.
+
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 23-01-PLAN.md — 补齐 Phase 16 与 Phase 21 的 verification artifact，并基于现有证据闭合 milestone audit phase gate
+
+**Success criteria:**
+1. 产出 `.planning/phases/16-reference-image-execution/16-VERIFICATION.md`，说明 Phase 16 交付已具备可追溯验证证据。
+2. 产出 `.planning/phases/21-reference-video-verification-backfill/21-VERIFICATION.md`，说明 Phase 21 交付已具备可追溯验证证据。
+3. 两份 verification 文件都明确引用现有测试、summary 与后续 verification 证据，而不是引入新的功能范围。
+4. 重新运行 `/gsd-audit-milestone` 时，不再因为 phase-level verification 缺失而阻塞 milestone。
 
 ## Progress
 
@@ -200,7 +223,7 @@ Plans:
 | v1.0 | 1-3 | 10/10 | Complete | 2026-04-17 |
 | v1.1 | 04-07 | 6/6 | Complete | 2026-04-19 |
 | v1.2 | 08-13 | 11/11 | Complete | 2026-04-20 |
-| v1.3 | 14-22 | 0/9 | Planned | - |
+| v1.3 | 14-23 | 0/10 | Planned | - |
 
 ## Coverage
 

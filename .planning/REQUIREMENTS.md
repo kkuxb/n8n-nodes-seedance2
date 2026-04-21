@@ -14,17 +14,17 @@
 
 ### Reference Video
 
-- [ ] **CRTK-10**: 用户可以通过 `参考视频生视频` 模式创建多模态参考生视频任务。
-- [ ] **CRTK-11**: 用户可以在 `参考视频生视频` 模式下提供 1 到 3 个参考视频 URL 或 `asset://` 素材 ID。
-- [ ] **CRTK-12**: 用户在参考图或参考视频模式下可以省略提示词，节点仍能按合法的多模态参考任务提交请求。
+- [x] **CRTK-10**: 用户可以通过 `参考视频生视频` 模式创建多模态参考生视频任务。
+- [x] **CRTK-11**: 用户可以在 `参考视频生视频` 模式下提供 1 到 3 个参考视频 URL 或 `asset://` 素材 ID。
+- [x] **CRTK-12**: 用户在参考图或参考视频模式下可以省略提示词，节点仍能按合法的多模态参考任务提交请求。
 
 ### UX and Validation
 
-- [ ] **UX-04**: 用户可以在节点 UI 中清晰区分 `文生视频`、`首帧图生视频`、`首尾帧图生视频`、`参考图生视频` 和 `参考视频生视频` 的用途。
-- [ ] **UX-05**: 用户可以在新模式下看到明确的字段说明和限制提示，包括参考素材数量、URL 时效、最近 7 天历史限制、真人脸限制以及参考模式与首帧模式的区别。
+- [x] **UX-04**: 用户可以在节点 UI 中清晰区分 `文生视频`、`首帧图生视频`、`首尾帧图生视频`、`参考图生视频` 和 `参考视频生视频` 的用途。
+- [x] **UX-05**: 用户可以在新模式下看到明确的字段说明和限制提示，包括参考素材数量、URL 时效、最近 7 天历史限制、真人脸限制以及参考模式与首帧模式的区别。
 - [x] **VAL-REF-01**: 节点会在本地校验新模式的模型支持、必填参考素材数量和场景互斥关系，并在无效组合时返回清晰错误，而不是把明显错误直接发给 API。
-- [ ] **VAL-REF-02**: 节点不会在本 milestone 接受参考图 + 参考视频混合输入、参考音频输入或 binary/base64 参考视频输入。
-- [ ] **COMP-01**: 新模式创建的任务保持与既有 `get/list/delete/wait/download` 生命周期能力兼容，且不会回退现有视频与图片能力。
+- [x] **VAL-REF-02**: 节点不会在本 milestone 接受参考图 + 参考视频混合输入、参考音频输入或 binary/base64 参考视频输入。
+- [x] **COMP-01**: 新模式创建的任务保持与既有 `get/list/delete/wait/download` 生命周期能力兼容，且不会回退现有视频与图片能力。
 
 ## v2 Requirements
 
@@ -54,14 +54,14 @@
 | CRTK-07 | Phase 19 | Complete |
 | CRTK-08 | Phase 19 | Complete |
 | CRTK-09 | Phase 19 | Complete |
-| CRTK-10 | Phase 21 | Pending |
-| CRTK-11 | Phase 21 | Pending |
-| CRTK-12 | Phase 20 | Pending |
-| UX-04 | Phase 20 | Pending |
-| UX-05 | Phase 22 | Pending |
+| CRTK-10 | Phase 21 | Complete |
+| CRTK-11 | Phase 21 | Complete |
+| CRTK-12 | Phase 20 | Complete |
+| UX-04 | Phase 20 | Complete |
+| UX-05 | Phase 22 | Complete |
 | VAL-REF-01 | Phase 19 | Complete |
-| VAL-REF-02 | Phase 20 | Pending |
-| COMP-01 | Phase 22 | Pending |
+| VAL-REF-02 | Phase 20 | Complete |
+| COMP-01 | Phase 22 | Complete |
 
 **Coverage:**
 - v1 requirements: 11 total
