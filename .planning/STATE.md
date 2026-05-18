@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Seedream 5.0 lite image generation and UX iteration
-status: archived
-stopped_at: Archived milestone v1.2
-last_updated: "2026-04-20T08:45:00.000Z"
-last_activity: 2026-04-20 -- Milestone v1.2 archived and ready for next-milestone definition
+milestone: v1.3
+milestone_name: Seedance 2.0 multimodal reference video generation
+status: planning
+last_updated: "2026-05-18T13:33:03.098Z"
+last_activity: 2026-05-18
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-04-19)
 
 ## Current Position
 
-Phase: none
-Plan: none
-Status: Milestone archived
-Last activity: 2026-04-20 -- Milestone v1.2 archived and ready for next-milestone definition
-
-Progress: [██████████] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-18 — Milestone v1.3 started
 
 ## Performance Metrics
 

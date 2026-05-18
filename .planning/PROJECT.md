@@ -4,9 +4,20 @@
 
 **Last shipped version:** v1.2
 **Last shipped date:** 2026-04-20
-**Status:** v1.2 shipped; ready to define the next milestone.
+**Status:** v1.3 planning started.
 
 v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` node while preserving the previously shipped Seedance video lifecycle. The node now supports mode-first video/image UX, prompt-only and reference-driven image generation, default binary image output, grouped image generation constraints, and execute-level regression coverage for image request shaping.
+
+## Current Milestone: v1.3 Seedance 2.0 multimodal reference video generation
+
+**Goal:** Add Seedance 2.0 video generation support that lets n8n users create videos from multimodal references while preserving the existing Seedance task lifecycle and shipped image-generation behavior.
+
+**Target features:**
+- Research the official Volcengine Seedance 2.0 video generation API documentation before implementation.
+- Add a video-generation request path for Seedance 2.0 multimodal references, covering text prompt plus supported reference media inputs.
+- Keep the existing create/get/list/delete/wait/download lifecycle stable and additive.
+- Expose reference inputs in an n8n-friendly way, reusing the current URL/binary multi-value patterns where practical.
+- Add validation and regression coverage for payload shaping, reference normalization, and lifecycle compatibility.
 
 ## What This Is
 
@@ -18,10 +29,9 @@ v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` n
 
 ## Next Milestone Goals
 
-- 通过 `/gsd-new-milestone` 定义下一阶段目标，而不是继续沿用 v1.2 的需求文件。
-- 评估是否清理仅用于内部兼容的图片参考图 fallback 路径。
-- 评估是否处理 PNG 图标 lint 技术债，或继续接受该项目约束。
-- 评估是否继续增强本地开发 runtime 的稳定性与发布流程。
+- v1.3 focuses on Seedance 2.0 multimodal reference video generation.
+- Defer unrelated cleanup unless required to keep the Seedance 2.0 integration safe.
+- Keep PNG icon lint debt accepted unless this milestone explicitly chooses to address branding assets.
 
 ## Constraints
 
@@ -41,6 +51,7 @@ v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` n
 | 默认图片结果输出为 n8n binary | 降低用户对 24 小时有效 URL 的依赖 | ✓ Shipped in v1.2 |
 | 保持 Seedance 视频 lifecycle 合同不回退 | 图片能力必须是 additive，不破坏 create/get/list/delete 的既有行为 | ✓ Verified through v1.2 |
 | PNG branding 继续作为已接受技术债 | 当前项目选择 PNG 资源，即使社区节点 lint 倾向 SVG | ✓ Accepted debt |
+| v1.3 先研究官方 Seedance 2.0 文档再实现多模态参考生视频 | Seedance 2.0 API 文档仍在更新，需避免按旧 Seedance 1.x 或非官方字段假设实现 | — Pending |
 
 ## Archived Context
 
@@ -63,4 +74,4 @@ This document evolves at milestone boundaries.
 - Start each new milestone with `/gsd-new-milestone` so requirements stay milestone-scoped and context cost remains bounded.
 
 ---
-*Last updated: 2026-04-20 after archiving v1.2 milestone*
+*Last updated: 2026-05-18 after starting v1.3 milestone*
