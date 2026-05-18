@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Seedance 2.0 multimodal reference video generation
-status: planning
-last_updated: "2026-05-18T13:33:03.098Z"
+status: ready_to_plan
+last_updated: "2026-05-18"
 last_activity: 2026-05-18
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,91 +17,72 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-19)
+See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** Planning the next milestone
+**Current focus:** Phase 14 - 多模态入口与参考材料表单
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-05-18 — Milestone v1.3 started
+Phase: 14 of 18 (多模态入口与参考材料表单)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-05-18 - Created v1.3 roadmap for Seedance 2.0 multimodal reference video generation.
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-
-- Total plans completed: 17
-- Average duration: 0 min
+- Total plans completed: 0
+- Average duration: N/A
 - Total execution time: 0.0 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1-3 | 10 | 0 min | - |
-| 04 | 1 | - | - |
-| 05 | 2 | - | - |
-| 12 | 2 | - | - |
-| 13 | 2 | - | - |
+| 14. 多模态入口与参考材料表单 | 0/TBD | N/A | N/A |
+| 15. 参考媒体来源与官方 payload | 0/TBD | N/A | N/A |
+| 16. Seedance 2.0 参数与本地校验 | 0/TBD | N/A | N/A |
+| 17. 既有模式与 lifecycle 兼容性 | 0/TBD | N/A | N/A |
+| 18. 用户文档与手工验收 | 0/TBD | N/A | N/A |
 
 **Recent Trend:**
+- Last 5 plans: N/A
+- Trend: N/A
 
-- Trend: Stable
-
-| Phase 06 P01 | 9min | 2 tasks | 5 files |
-| Phase 06 P02 | 10min | 2 tasks | 6 files |
-| Phase 12 P01 | 7min | 3 tasks | 8 files |
-| Phase 12 P02 | 8 min | 3 tasks | 5 files |
-| Phase 13 P02 | 1 min | 2 tasks | 1 files |
+*Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
 
-- Add image generation inside the existing `Seedance` node instead of creating a separate node.
-- Reuse the existing `SeedanceApi` API Key credential for image generation.
-- v1.2 MVP supports only Seedream 5.0 lite (`doubao-seedream-5-0-260128`).
-- Support text-to-image plus image-to-image reference inputs from URL and binary in the public UI, with comma-separated multi-value support.
-- Cover both single-image and sequential/group image generation.
-- Default result behavior should be n8n binary output.
-- Do not support streaming in this milestone.
-- Include advanced options: `sequential_image_generation`, `max_images`, `web_search`, `optimize_prompt_options`, and resolution/aspect-ratio size mapping.
-- Defer `output_format` and `watermark` unless implementation proves they are required.
-- Preserve existing video lifecycle contracts and accepted PNG icon technical debt.
-- Drive image execution from `generationMode=image` with `imageOperation` fallback to `textToImage`, while keeping `operation=generateImage` as internal compatibility behavior only.
-- Normalize comma-separated URL and binary property inputs before reusing the existing Seedream validator and payload builder.
-- `optimizePrompt=false` omits `optimize_prompt_options`; `true` maps to the supported `standard` mode.
-- Keep legacy `operation=generateImage` and internal base64/fixedCollection reference handling as compatibility fallbacks, while the public Phase 12 UI exposes URL and binary reference sources only.
-- Close v1.2 audit gaps by reconciling planning artifacts to shipped behavior instead of re-expanding the public image reference UI.
-- Keep the new audit-closing regression at the execute() boundary so real node runtime request shaping is verified, not just mapper behavior.
-- Reuse the Phase 12 focused regression family unchanged after adding the new assertion so image and video contracts remain jointly verified.
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
 
-### Roadmap Evolution
-
-- Phase 12 added: 图片生成功能改为先选择视频生成/图像生成模式，再在图像生成模式下选择文生图/图生图；同步调整字段顺序、组图开关和参考图 URL/二进制属性名的多值输入方式。
-- Phase 13 added: 关闭 v1.2 审计缺口，补齐 Phase 08-11 verification，统一 IMG-04/VAL-IMG-02/图片水印的 requirements 与审计口径，并补一条组图 execute 回归断言。
+- [v1.3]: Scope is limited to official Seedance 2.0 "多模态参考生视频"; do not rebuild shipped text-to-video, first-frame image-to-video, first/last-frame image-to-video, Seedream image generation, credentials, or lifecycle behavior.
+- [v1.3]: Use `APIdocs/seedance2.0文档.md` as the authoritative local API contract for this milestone.
+- [v1.3]: Continue phase numbering from v1.2; active milestone starts at Phase 14.
 
 ### Pending Todos
 
-- Run `/gsd-new-milestone` to define the next milestone and create a fresh requirements file.
+None yet.
 
 ### Blockers/Concerns
 
-- Default binary output for group image generation may increase execution-time memory usage and needs explicit output-shaping decisions in implementation.
-- API default `response_format=url` means implementation likely needs internal download behavior to satisfy the milestone's default binary-output goal.
-- PNG icon lint failures remain an accepted release exception and are intentionally unchanged.
+None currently. Official copied Seedance 2.0 documentation is available locally and overrides earlier research uncertainty.
 
-## Quick Tasks Completed
+## Deferred Items
 
-| ID | Date | Task | Status | Notes |
-|----|------|------|--------|-------|
-| Q001 | 2026-04-19 | Update Seedance branding assets and remove redundant resource selector | Completed with blocker | Swapped node and credential branding references to PNG assets from `APIdocs/1776526732352_download.jpg`; removed the single-option `resource` selector and its dependent display conditions. `npm run build` passed. `npm run lint` still fails because n8n community-node validation requires SVG icons, so PNG branding is incompatible with current lint rules. |
+Items acknowledged and carried forward from previous milestone close:
+
+| Category | Item | Status | Deferred At |
+|----------|------|--------|-------------|
+| Branding | PNG icon lint debt remains accepted unless this milestone explicitly addresses assets. | Deferred | v1.2 |
 
 ## Session Continuity
 
-Last session: 2026-04-20T08:45:00.000Z
-Stopped at: Archived milestone v1.2
+Last session: 2026-05-18
+Stopped at: v1.3 roadmap created; next action is `$gsd-plan-phase 14`.
 Resume file: None

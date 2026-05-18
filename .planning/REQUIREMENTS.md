@@ -97,50 +97,50 @@ Primary official source for this milestone:
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MODE-01 | TBD | Pending |
-| MODE-02 | TBD | Pending |
-| MODE-03 | TBD | Pending |
-| REF-01 | TBD | Pending |
-| REF-02 | TBD | Pending |
-| REF-03 | TBD | Pending |
-| REF-04 | TBD | Pending |
-| REF-05 | TBD | Pending |
-| SRC-01 | TBD | Pending |
-| SRC-02 | TBD | Pending |
-| SRC-03 | TBD | Pending |
-| SRC-04 | TBD | Pending |
-| SRC-05 | TBD | Pending |
-| VAL-01 | TBD | Pending |
-| VAL-02 | TBD | Pending |
-| VAL-03 | TBD | Pending |
-| VAL-04 | TBD | Pending |
-| VAL-05 | TBD | Pending |
-| VAL-06 | TBD | Pending |
-| PAY-01 | TBD | Pending |
-| PAY-02 | TBD | Pending |
-| PAY-03 | TBD | Pending |
-| PAY-04 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| COMP-01 | TBD | Pending |
-| COMP-02 | TBD | Pending |
-| COMP-03 | TBD | Pending |
-| COMP-04 | TBD | Pending |
-| DOC-01 | TBD | Pending |
-| DOC-02 | TBD | Pending |
-| DOC-03 | TBD | Pending |
+| MODE-01 | Phase 14 | Pending |
+| MODE-02 | Phase 17 | Pending |
+| MODE-03 | Phase 14 | Pending |
+| REF-01 | Phase 15 | Pending |
+| REF-02 | Phase 15 | Pending |
+| REF-03 | Phase 15 | Pending |
+| REF-04 | Phase 15 | Pending |
+| REF-05 | Phase 15 | Pending |
+| SRC-01 | Phase 15 | Pending |
+| SRC-02 | Phase 15 | Pending |
+| SRC-03 | Phase 15 | Pending |
+| SRC-04 | Phase 15 | Pending |
+| SRC-05 | Phase 15 | Pending |
+| VAL-01 | Phase 16 | Pending |
+| VAL-02 | Phase 16 | Pending |
+| VAL-03 | Phase 16 | Pending |
+| VAL-04 | Phase 16 | Pending |
+| VAL-05 | Phase 16 | Pending |
+| VAL-06 | Phase 16 | Pending |
+| PAY-01 | Phase 15 | Pending |
+| PAY-02 | Phase 17 | Pending |
+| PAY-03 | Phase 16 | Pending |
+| PAY-04 | Phase 15 | Pending |
+| UI-01 | Phase 14 | Pending |
+| UI-02 | Phase 14 | Pending |
+| UI-03 | Phase 14 | Pending |
+| UI-04 | Phase 14 | Pending |
+| COMP-01 | Phase 17 | Pending |
+| COMP-02 | Phase 17 | Pending |
+| COMP-03 | Phase 17 | Pending |
+| COMP-04 | Phase 17 | Pending |
+| DOC-01 | Phase 18 | Pending |
+| DOC-02 | Phase 18 | Pending |
+| DOC-03 | Phase 18 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34
+- Mapped to phases: 34
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-18*
-*Last updated: 2026-05-18 after v1.3 scope confirmation*
+*Last updated: 2026-05-18 after v1.3 roadmap creation*
