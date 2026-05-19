@@ -39,18 +39,18 @@ Primary official source for this milestone:
 
 ### Validation
 
-- [ ] **VAL-01**: The node validates multimodal reference image count, image formats, single-image size, and total request-size limits according to the official document.
-- [ ] **VAL-02**: The node validates multimodal reference video count, formats, resolution, duration, total duration, size, FPS, and MIME/codec constraints according to the official document where locally knowable.
-- [ ] **VAL-03**: The node validates multimodal reference audio count, formats, duration, total duration, size, and request-size limits according to the official document where locally knowable.
-- [ ] **VAL-04**: The node validates Seedance 2.0 duration, ratio, resolution, seed, execution timeout, watermark, and generate-audio options using the official body-parameter contract.
-- [ ] **VAL-05**: The node allows 1080p for standard Seedance 2.0 but prevents 1080p for Seedance 2.0 Fast.
-- [ ] **VAL-06**: The node does not expose or send `camera_fixed` for Seedance 2.0 because the official document says Seedance 2.0 does not support it.
+- [x] **VAL-01**: The node validates multimodal reference image count, image formats, single-image size, and total request-size limits according to the official document.
+- [x] **VAL-02**: The node validates multimodal reference video count, formats, resolution, duration, total duration, size, FPS, and MIME/codec constraints according to the official document where locally knowable.
+- [x] **VAL-03**: The node validates multimodal reference audio count, formats, duration, total duration, size, and request-size limits according to the official document where locally knowable.
+- [x] **VAL-04**: The node validates Seedance 2.0 duration, ratio, resolution, seed, execution timeout, watermark, and generate-audio options using the official body-parameter contract.
+- [x] **VAL-05**: The node allows 1080p for standard Seedance 2.0 but prevents 1080p for Seedance 2.0 Fast.
+- [x] **VAL-06**: The node does not expose or send `camera_fixed` for Seedance 2.0 because the official document says Seedance 2.0 does not support it.
 
 ### Payload
 
 - [x] **PAY-01**: The create payload builder emits official `content` objects for text, `image_url`, `video_url`, and `audio_url` in multimodal mode.
 - [ ] **PAY-02**: The create payload builder preserves the existing payload contract for 文生视频、首帧图生视频、首尾帧图生视频.
-- [ ] **PAY-03**: The create payload builder sends supported generation options in the request body instead of appending weakly-validated prompt suffix parameters.
+- [x] **PAY-03**: The create payload builder sends supported generation options in the request body instead of appending weakly-validated prompt suffix parameters.
 - [x] **PAY-04**: The request summary reports model, mode, prompt presence, reference counts, reference types, roles, source kinds, and option values without raw media payloads.
 
 ### UI
@@ -114,15 +114,15 @@ Which phases cover which requirements.
 | SRC-03 | Phase 15 | Complete |
 | SRC-04 | Phase 15 | Complete |
 | SRC-05 | Phase 15 | Complete |
-| VAL-01 | Phase 16 | Pending |
-| VAL-02 | Phase 16 | Pending |
-| VAL-03 | Phase 16 | Pending |
-| VAL-04 | Phase 16 | Pending |
-| VAL-05 | Phase 16 | Pending |
-| VAL-06 | Phase 16 | Pending |
+| VAL-01 | Phase 16 | Complete |
+| VAL-02 | Phase 16 | Complete |
+| VAL-03 | Phase 16 | Complete |
+| VAL-04 | Phase 16 | Complete |
+| VAL-05 | Phase 16 | Complete |
+| VAL-06 | Phase 16 | Complete |
 | PAY-01 | Phase 15 | Complete |
 | PAY-02 | Phase 17 | Pending |
-| PAY-03 | Phase 16 | Pending |
+| PAY-03 | Phase 16 | Complete |
 | PAY-04 | Phase 15 | Complete |
 | UI-01 | Phase 14 | Complete |
 | UI-02 | Phase 14 | Complete |
