@@ -13,6 +13,8 @@ function createExecutionContext(
 	options?: {
 		throwOnMissingWithoutFallback?: boolean;
 		requestedParameters?: string[];
+		forbiddenParameters?: string[];
+		forbiddenParameterPrefixes?: string[];
 	},
 ) {
 	const calls: Array<Record<string, unknown>> = [];
@@ -37,6 +39,14 @@ function createExecutionContext(
 			},
 			getNodeParameter(name: string, _itemIndex: number, fallback?: unknown) {
 				options?.requestedParameters?.push(name);
+
+				if (options?.forbiddenParameters?.includes(name)) {
+					throw new Error(`Unexpected video parameter read: ${name}`);
+				}
+
+				if (options?.forbiddenParameterPrefixes?.some((prefix) => name.startsWith(prefix))) {
+					throw new Error(`Unexpected video parameter read: ${name}`);
+				}
 
 				if (
 					!Object.prototype.hasOwnProperty.call(parameters, name) &&
@@ -144,6 +154,56 @@ test('image mode succeeds when operation parameter is absent from saved workflow
 	assert.equal(result[0][0].binary?.image1.data, 'RAW_BASE64_SENTINEL');
 	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
 	assert.equal(requestedParameters.includes('operation'), false);
+});
+
+test('image mode ignores stale video-only saved workflow parameters', async () => {
+	const requestedParameters: string[] = [];
+	const forbiddenParameters = [
+		'operation',
+		'createMode',
+		'referenceMaterials',
+		'firstFrameInputMethod',
+		'firstFrameImageUrl',
+		'firstFrameBinaryProperty',
+		'lastFrameInputMethod',
+		'lastFrameImageUrl',
+		'lastFrameBinaryProperty',
+	];
+	const { calls, context } = createExecutionContext(
+		{
+			...baseParameters,
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						materialUrl: 'https://example.com/video-reference.png',
+					},
+				],
+			},
+			firstFrameInputMethod: 'url',
+			firstFrameImageUrl: 'https://example.com/first-frame.png',
+			lastFrameInputMethod: 'url',
+			lastFrameImageUrl: 'https://example.com/last-frame.png',
+		},
+		[{ data: [{ b64_json: 'RAW_BASE64_SENTINEL' }], usage: { generated_images: 1 } }],
+		undefined,
+		{
+			requestedParameters,
+			forbiddenParameters,
+			forbiddenParameterPrefixes: ['firstFrame', 'lastFrame'],
+		},
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+
+	assert.equal(result[0][0].binary?.image1.data, 'RAW_BASE64_SENTINEL');
+	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
+	for (const parameter of forbiddenParameters) {
+		assert.equal(requestedParameters.includes(parameter), false, `${parameter} should not be read`);
+	}
 });
 
 test('multiple successful images stay in one output item with binary.image1 and binary.image2', async () => {
@@ -290,6 +350,28 @@ test('image watermark can be explicitly enabled from node parameters', async () 
 
 	assert.equal((calls[0].body as Record<string, unknown>).watermark, true);
 	assert.equal(((calls[0].body as Record<string, unknown>).response_format as string), 'b64_json');
+});
+
+test('webSearch and optimizePrompt remain image-only payload options', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			...baseParameters,
+			webSearch: true,
+			optimizePrompt: true,
+		},
+		[{ data: [{ b64_json: 'generated_image' }] }],
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const requestBody = calls[0].body as Record<string, unknown>;
+	const requestSummary = result[0][0].json.requestSummary as Record<string, unknown>;
+
+	assert.deepEqual(requestBody.tools, [{ type: 'web_search' }]);
+	assert.deepEqual(requestBody.optimize_prompt_options, { mode: 'standard' });
+	assert.equal(requestSummary.webSearch, true);
+	assert.equal(requestSummary.optimizePromptMode, 'standard');
+	assert.equal('referenceMaterials' in requestBody, false);
+	assert.equal('camera_fixed' in requestBody, false);
 });
 
 test('group image execution posts sequential image max_images through execute payload shaping', async () => {
