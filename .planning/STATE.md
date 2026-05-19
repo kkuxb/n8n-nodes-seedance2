@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Seedance 2.0 multimodal reference video generation
-status: ready_to_plan
-stopped_at: Phase 15 complete (2/2) — ready to discuss Phase 16
-last_updated: 2026-05-19T07:34:53.866Z
+status: planning
+stopped_at: Phase 16 context gathered
+last_updated: "2026-05-19T07:56:19.466Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 5
@@ -87,6 +87,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-19T07:08:05.183Z
-Stopped at: Phase 15 context gathered
-Resume file: .planning/phases/15-payload/15-CONTEXT.md
+Last session: 2026-05-19T07:56:19.435Z
+Stopped at: Phase 16 context gathered
+Resume file: .planning/phases/16-seedance-2-0/16-CONTEXT.md
