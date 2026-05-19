@@ -17,9 +17,9 @@ Primary official source for this milestone:
 
 ### Mode
 
-- [ ] **MODE-01**: User can select a distinct "多模态参考生视频" create mode inside the existing `Seedance` video create operation.
+- [x] **MODE-01**: User can select a distinct "多模态参考生视频" create mode inside the existing `Seedance` video create operation.
 - [ ] **MODE-02**: User can continue using the existing 文生视频、首帧图生视频、首尾帧图生视频 modes without changed behavior.
-- [ ] **MODE-03**: User cannot accidentally mix 多模态参考生视频 with strict first-frame or first/last-frame roles; the node explains that strict first/last-frame control remains in the existing first-frame modes.
+- [x] **MODE-03**: User cannot accidentally mix 多模态参考生视频 with strict first-frame or first/last-frame roles; the node explains that strict first/last-frame control remains in the existing first-frame modes.
 
 ### References
 
@@ -55,10 +55,10 @@ Primary official source for this milestone:
 
 ### UI
 
-- [ ] **UI-01**: The existing `Seedance` node exposes multimodal references as a repeatable `参考素材` list with `素材类型`, `素材来源`, and source-specific `素材URL` / `属性名` / `素材ID` fields. The list intentionally does not include a label field.
-- [ ] **UI-02**: The UI copy explains the official real-person face restriction and directs users to authorized Volcengine assets when relevant.
-- [ ] **UI-03**: The UI copy explains that multimodal mode can indirectly guide first/last-frame intent through prompt/reference materials, but strict first/last-frame consistency should use the existing first/last-frame mode.
-- [ ] **UI-04**: The UI keeps advanced v1.3 additions such as web search and safety identifier optional, so basic multimodal generation remains easy to configure.
+- [x] **UI-01**: The existing `Seedance` node exposes multimodal references as a repeatable `参考素材` list with `素材类型`, `素材来源`, and source-specific `素材URL` / `属性名` / `素材ID` fields. The list intentionally does not include a label field.
+- [x] **UI-02**: The UI copy explains the official real-person face restriction and directs users to authorized Volcengine assets when relevant.
+- [x] **UI-03**: The UI copy explains that multimodal mode can indirectly guide first/last-frame intent through prompt/reference materials, but strict first/last-frame consistency should use the existing first/last-frame mode.
+- [x] **UI-04**: The UI keeps advanced v1.3 additions such as web search and safety identifier optional, so basic multimodal generation remains easy to configure.
 
 ### Compatibility
 
@@ -101,9 +101,9 @@ Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MODE-01 | Phase 14 | Pending |
+| MODE-01 | Phase 14 | Complete |
 | MODE-02 | Phase 17 | Pending |
-| MODE-03 | Phase 14 | Pending |
+| MODE-03 | Phase 14 | Complete |
 | REF-01 | Phase 15 | Pending |
 | REF-02 | Phase 15 | Pending |
 | REF-03 | Phase 15 | Pending |
@@ -124,10 +124,10 @@ Which phases cover which requirements.
 | PAY-02 | Phase 17 | Pending |
 | PAY-03 | Phase 16 | Pending |
 | PAY-04 | Phase 15 | Pending |
-| UI-01 | Phase 14 | Pending |
-| UI-02 | Phase 14 | Pending |
-| UI-03 | Phase 14 | Pending |
-| UI-04 | Phase 14 | Pending |
+| UI-01 | Phase 14 | Complete |
+| UI-02 | Phase 14 | Complete |
+| UI-03 | Phase 14 | Complete |
+| UI-04 | Phase 14 | Complete |
 | COMP-01 | Phase 17 | Pending |
 | COMP-02 | Phase 17 | Pending |
 | COMP-03 | Phase 17 | Pending |

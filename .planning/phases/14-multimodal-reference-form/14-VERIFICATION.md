@@ -1,14 +1,14 @@
 ---
 phase: 14-multimodal-reference-form
-verified: 2026-05-19T03:25:58Z
-status: gaps_found
-score: 23/23 must-haves statically verified; automated build/test blocked
+verified: 2026-05-19T06:39:19Z
+status: passed
+score: 23/23 must-haves verified
 ---
 
 # Phase 14: 多模态入口与参考素材表单 Verification Report
 
 **Phase Goal:** Add the user-facing Seedance 2.0 multimodal reference video create mode and reference素材 form without implementing Phase 15 payload mapping.
-**Status:** gaps_found
+**Status:** passed
 
 ## Goal Achievement
 
@@ -29,12 +29,12 @@ score: 23/23 must-haves statically verified; automated build/test blocked
 
 | Requirement | Status | Blocking Issue |
 |-------------|--------|----------------|
-| MODE-01 | SATISFIED BY IMPLEMENTATION | Automated test run blocked by environment. |
-| MODE-03 | SATISFIED BY IMPLEMENTATION | Automated test run blocked by environment. |
-| UI-01 | SATISFIED BY IMPLEMENTATION | Automated test run blocked by environment. |
-| UI-02 | SATISFIED BY IMPLEMENTATION | Automated test run blocked by environment. |
-| UI-03 | SATISFIED BY IMPLEMENTATION | Automated test run blocked by environment. |
-| UI-04 | SATISFIED BY IMPLEMENTATION | Automated test run blocked by environment. |
+| MODE-01 | SATISFIED | - |
+| MODE-03 | SATISFIED | - |
+| UI-01 | SATISFIED | - |
+| UI-02 | SATISFIED | - |
+| UI-03 | SATISFIED | - |
+| UI-04 | SATISFIED | - |
 
 ## Automated Checks
 
@@ -42,36 +42,22 @@ score: 23/23 must-haves statically verified; automated build/test blocked
 |-------|--------|--------|
 | `git diff --check` | PASS | No whitespace errors; Git reported LF-to-CRLF warnings only. |
 | Static source scan | PASS | No Phase 14 direct Base64 create source, no label/tag/note field, expected reference素材 strings present. |
-| `npm run build` | BLOCKED | `n8n-node` is not recognized because local dependencies are incomplete. |
-| `node --test test/createPayload.test.ts test/seedanceVideoRegression.test.ts` | BLOCKED | Tests import `dist/`, which cannot exist until build succeeds. |
-| Environment check | BLOCKED | Current Node is `v24.15.0`; project requires Node `22.x`. `npm ls --depth=0` reports invalid/extraneous dependencies. |
+| `npm run build` | PASS | `n8n-node build` completed successfully under Node 24.15.0. |
+| `node --test test/createPayload.test.ts test/seedanceVideoRegression.test.ts` | PASS | 28/28 focused tests passed. |
+| `npm run dev:setup` | PASS | Installed isolated local n8n 2.20.9 runtime under `.n8n-dev-server`. |
+| `npm run dev` | PASS | n8n 2.20.9 reached `Editor is now accessible via: http://localhost:5678`; clean custom package linked from `.n8n-dev-package`. |
 
 ## Human Verification Required
 
-### 1. Restore Node 22 dependency environment
-
-**Test:** Use Node 22.x, reinstall dependencies cleanly, then run `npm run build`.
-**Expected:** `n8n-node build` completes and generates `dist/`.
-**Why human:** The current sandbox has no approval path for network/escalated repair and npm install failed under Node 24.
-
-### 2. Run focused Phase 14 tests
-
-**Test:** Run `node --test test/createPayload.test.ts test/seedanceVideoRegression.test.ts`.
-**Expected:** The focused create schema, payload, and execution regressions pass.
-**Why human:** The tests depend on generated `dist/` output.
+None. Automated build, focused tests, and local dev startup all passed.
 
 ## Gaps Summary
 
-### Critical Gaps
-
-1. **Automated verification blocked by local environment**
-   - Missing: Successful `npm run build` and focused test execution.
-   - Impact: Phase 14 should not be marked fully verified until Node 22 dependencies are restored and tests pass.
-   - Fix: Restore a clean Node 22 install, rebuild, and rerun the focused tests.
+**No gaps found.** Phase goal achieved. Ready to proceed to Phase 15.
 
 ## Verification Metadata
 
-**Verification approach:** Goal-backward static verification plus attempted automated checks.
+**Verification approach:** Goal-backward static verification plus automated build/test/dev checks.
 **Must-haves source:** `14-01-PLAN.md` and `14-02-PLAN.md`.
 **Implementation commit:** `f823c62`.
 **Verifier:** Codex inline execution.
