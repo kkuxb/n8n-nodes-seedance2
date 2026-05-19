@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Seedance 2.0 multimodal reference video generation
-status: verifying
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-05-19T12:02:42.828Z"
+status: ready_to_plan
+stopped_at: Phase 16 complete (2/2) — ready to discuss Phase 17
+last_updated: 2026-05-19T12:04:28.313Z
 last_activity: 2026-05-19
 progress:
   total_phases: 5
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-18)
 
 **Core value:** 让 n8n 用户可以用最少配置、可预期的方式接入 Seedance/Seedream 生成能力，并优先保证完整任务与产物流转体验。
-**Current focus:** Phase 16 — seedance-2-0
+**Current focus:** Phase 17 — 既有模式与 lifecycle 兼容性
 
 ## Current Position
 
-Phase: 16 (seedance-2-0) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
+Phase: 17
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-05-19
 
 Milestone verified progress: [██░░░░░░░░] 20%
@@ -36,7 +36,7 @@ Milestone verified progress: [██░░░░░░░░] 20%
 
 **Velocity:**
 
-- Total plans completed: 2
+- Total plans completed: 4
 - Average duration: N/A
 - Total execution time: 0.0 hours
 
@@ -50,6 +50,7 @@ Milestone verified progress: [██░░░░░░░░] 20%
 | 17. 既有模式与 lifecycle 兼容性 | 0/TBD | N/A | N/A |
 | 18. 用户文档与手工验收 | 0/TBD | N/A | N/A |
 | 15 | 2 | - | - |
+| 16 | 2 | - | - |
 
 **Recent Trend:**
 
