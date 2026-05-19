@@ -143,5 +143,5 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18
 | 14. 多模态入口与参考素材表单 | v1.3 | 2/2 | Complete | 2026-05-19 |
 | 15. 参考媒体来源与官方 payload | v1.3 | 2/2 | Complete    | 2026-05-19 |
 | 16. Seedance 2.0 参数与本地校验 | v1.3 | 2/2 | Complete    | 2026-05-19 |
-| 17. 既有模式与 lifecycle 兼容性 | v1.3 | 0/3 | Planned    | - |
+| 17. 既有模式与 lifecycle 兼容性 | v1.3 | 1/3 | In Progress|  |
 | 18. 用户文档与手工验收 | v1.3 | 0/TBD | Not started | - |

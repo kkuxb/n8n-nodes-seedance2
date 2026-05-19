@@ -18,7 +18,7 @@ Primary official source for this milestone:
 ### Mode
 
 - [x] **MODE-01**: User can select a distinct "多模态参考生视频" create mode inside the existing `Seedance` video create operation.
-- [ ] **MODE-02**: User can continue using the existing 文生视频、首帧图生视频、首尾帧图生视频 modes without changed behavior.
+- [x] **MODE-02**: User can continue using the existing 文生视频、首帧图生视频、首尾帧图生视频 modes without changed behavior.
 - [x] **MODE-03**: User cannot accidentally mix 多模态参考生视频 with strict first-frame or first/last-frame roles; the node explains that strict first/last-frame control remains in the existing first-frame modes.
 
 ### References
@@ -49,7 +49,7 @@ Primary official source for this milestone:
 ### Payload
 
 - [x] **PAY-01**: The create payload builder emits official `content` objects for text, `image_url`, `video_url`, and `audio_url` in multimodal mode.
-- [ ] **PAY-02**: The create payload builder preserves the existing payload contract for 文生视频、首帧图生视频、首尾帧图生视频.
+- [x] **PAY-02**: The create payload builder preserves the existing payload contract for 文生视频、首帧图生视频、首尾帧图生视频.
 - [x] **PAY-03**: The create payload builder sends supported generation options in the request body instead of appending weakly-validated prompt suffix parameters.
 - [x] **PAY-04**: The request summary reports model, mode, prompt presence, reference counts, reference types, roles, source kinds, and option values without raw media payloads.
 
@@ -62,10 +62,10 @@ Primary official source for this milestone:
 
 ### Compatibility
 
-- [ ] **COMP-01**: Existing create/get/list/delete task lifecycle behavior remains compatible with shipped v1.2 workflows.
+- [x] **COMP-01**: Existing create/get/list/delete task lifecycle behavior remains compatible with shipped v1.2 workflows.
 - [ ] **COMP-02**: Existing wait and video-download behavior remains compatible with multimodal tasks and shipped non-multimodal tasks.
 - [ ] **COMP-03**: Existing Seedream image-generation paths remain unaffected by the new video multimodal reference helpers.
-- [ ] **COMP-04**: Regression tests cover old video modes, new multimodal payload shaping, validation errors, n8n binary conversion for supported media, and execute-level HTTP body capture.
+- [x] **COMP-04**: Regression tests cover old video modes, new multimodal payload shaping, validation errors, n8n binary conversion for supported media, and execute-level HTTP body capture.
 
 ### Documentation
 
@@ -102,7 +102,7 @@ Which phases cover which requirements.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | MODE-01 | Phase 14 | Complete |
-| MODE-02 | Phase 17 | Pending |
+| MODE-02 | Phase 17 | Complete |
 | MODE-03 | Phase 14 | Complete |
 | REF-01 | Phase 15 | Complete |
 | REF-02 | Phase 15 | Complete |
@@ -121,17 +121,17 @@ Which phases cover which requirements.
 | VAL-05 | Phase 16 | Complete |
 | VAL-06 | Phase 16 | Complete |
 | PAY-01 | Phase 15 | Complete |
-| PAY-02 | Phase 17 | Pending |
+| PAY-02 | Phase 17 | Complete |
 | PAY-03 | Phase 16 | Complete |
 | PAY-04 | Phase 15 | Complete |
 | UI-01 | Phase 14 | Complete |
 | UI-02 | Phase 14 | Complete |
 | UI-03 | Phase 14 | Complete |
 | UI-04 | Phase 14 | Complete |
-| COMP-01 | Phase 17 | Pending |
+| COMP-01 | Phase 17 | Complete |
 | COMP-02 | Phase 17 | Pending |
 | COMP-03 | Phase 17 | Pending |
-| COMP-04 | Phase 17 | Pending |
+| COMP-04 | Phase 17 | Complete |
 | DOC-01 | Phase 18 | Pending |
 | DOC-02 | Phase 18 | Pending |
 | DOC-03 | Phase 18 | Pending |
