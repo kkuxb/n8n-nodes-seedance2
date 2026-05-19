@@ -30,7 +30,7 @@
     "access": "public"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=24.15.0 <25"
   },
   "main": "dist/nodes/Seedance/Seedance.node.js",
   "files": [
@@ -54,8 +54,9 @@
   },
   "devDependencies": {
     "@n8n/node-cli": "^0.23.1",
-    "@types/node": "^22.15.3",
+    "@types/node": "^24.0.0",
     "eslint": "9.29.0",
+    "n8n": "2.20.9",
     "n8n-workflow": "^2.13.1",
     "typescript": "^5.8.3"
   }
