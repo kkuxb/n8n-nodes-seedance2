@@ -154,7 +154,31 @@ export class Seedance implements INodeType {
 			};
 		};
 
-		const collectSeedanceReferenceMaterials = (itemIndex: number): SeedanceReferenceMaterialInput[] => {
+		const processSeedanceBinaryReference = async (
+			itemIndex: number,
+			binaryProp: string,
+			referenceIndex: number,
+		): Promise<string> => {
+			this.helpers.assertBinaryData(itemIndex, binaryProp);
+			const itemBinary = items[itemIndex].binary?.[binaryProp];
+			const mimeType = itemBinary?.mimeType ?? '';
+
+			if (mimeType.trim() === '') {
+				throw new NodeOperationError(
+					this.getNode(),
+					`参考素材第 ${referenceIndex} 项的 Binary 文件缺少 MIME 类型。`,
+					{ itemIndex },
+				);
+			}
+
+			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+
+			return `data:${mimeType};base64,${binaryData.toString('base64')}`;
+		};
+
+		const collectSeedanceReferenceMaterials = async (
+			itemIndex: number,
+		): Promise<SeedanceReferenceMaterialInput[]> => {
 			const referenceMaterialsCollection = this.getNodeParameter(
 				'referenceMaterials',
 				itemIndex,
@@ -165,30 +189,44 @@ export class Seedance implements INodeType {
 				: [];
 			const referenceMaterials: SeedanceReferenceMaterialInput[] = [];
 
-			for (const referenceItem of referenceItems) {
+			for (const [referenceIndex, referenceItem] of referenceItems.entries()) {
 				const materialType = ((referenceItem.materialType as string | undefined) ??
 					'image') as SeedanceReferenceMaterialType;
 				const materialSource = (materialType === 'video'
 					? ((referenceItem.videoMaterialSource as string | undefined) ?? 'url')
 					: ((referenceItem.materialSource as string | undefined) ?? 'url')) as SeedanceReferenceMaterialSource;
-				const value =
-					materialType === 'video'
-						? materialSource === 'asset'
-							? ((referenceItem.videoAssetId as string | undefined) ?? '')
-							: ((referenceItem.videoMaterialUrl as string | undefined) ?? '')
-						: materialSource === 'asset'
-							? ((referenceItem.assetId as string | undefined) ?? '')
-							: materialSource === 'binary'
-								? ((referenceItem.binaryProperty as string | undefined) ?? 'data')
-								: ((referenceItem.materialUrl as string | undefined) ?? '');
+				let rawValue = '';
 
-				if (typeof value === 'string' && value.trim() !== '') {
-					referenceMaterials.push({
-						materialType,
-						materialSource,
-						value: value.trim(),
-					});
+				if (materialType === 'video') {
+					rawValue = materialSource === 'asset'
+						? ((referenceItem.videoAssetId as string | undefined) ?? '')
+						: ((referenceItem.videoMaterialUrl as string | undefined) ?? '');
+				} else if (materialSource === 'asset') {
+					rawValue = (referenceItem.assetId as string | undefined) ?? '';
+				} else if (materialSource === 'binary') {
+					rawValue = (referenceItem.binaryProperty as string | undefined) ?? 'data';
+				} else {
+					rawValue = (referenceItem.materialUrl as string | undefined) ?? '';
 				}
+				const trimmedValue = typeof rawValue === 'string' ? rawValue.trim() : '';
+
+				if (trimmedValue === '') {
+					throw new NodeOperationError(
+						this.getNode(),
+						`参考素材第 ${referenceIndex + 1} 项的来源值不能为空，请填写素材URL、属性名或素材ID。`,
+						{ itemIndex },
+					);
+				}
+
+				const value = materialSource === 'binary' && materialType !== 'video'
+					? await processSeedanceBinaryReference(itemIndex, trimmedValue, referenceIndex + 1)
+					: trimmedValue;
+
+				referenceMaterials.push({
+					materialType,
+					materialSource,
+					value,
+				});
 			}
 
 			return referenceMaterials;
@@ -409,7 +447,7 @@ export class Seedance implements INodeType {
 					}
 
 					if (createMode === 'multimodal_reference') {
-						createInput.referenceMaterials = collectSeedanceReferenceMaterials(itemIndex);
+						createInput.referenceMaterials = await collectSeedanceReferenceMaterials(itemIndex);
 					}
 
 					const durationValue = this.getNodeParameter('duration', itemIndex) as number;

@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 
 const createPayloadModule = await import('../dist/nodes/Seedance/shared/mappers/createPayload.js');
 const constantsModule = await import('../dist/nodes/Seedance/shared/constants.js');
-const requestModule = await import('../dist/nodes/Seedance/shared/transport/request.js');
 const endpointsModule = await import('../dist/nodes/Seedance/shared/transport/endpoints.js');
 const pollingModule = await import('../dist/nodes/Seedance/shared/polling/getTaskPolling.js');
 const nodeModule = await import('../dist/nodes/Seedance/Seedance.node.js');
@@ -16,10 +15,21 @@ const { getSeedanceOperationEndpoint, getSeedanceDeleteTaskEndpoint } = endpoint
 const { GET_TASK_POLL_INTERVAL_MS } = pollingModule;
 const { Seedance } = nodeModule;
 
-function createVideoExecutionContext(parameters: Record<string, unknown>) {
+function createVideoExecutionContext(
+	parameters: Record<string, unknown>,
+	binaryData: Record<string, { mimeType?: string; data: string }> = {},
+) {
 	const calls: Array<Record<string, unknown>> = [];
 	const requestedParameters: string[] = [];
 	const assertedBinaryProperties: string[] = [];
+	const inputBinary = Object.fromEntries(
+		Object.entries(binaryData).map(([name, binary]) => [
+			name,
+			{
+				mimeType: binary.mimeType,
+			},
+		]),
+	);
 
 	return {
 		calls,
@@ -27,7 +37,7 @@ function createVideoExecutionContext(parameters: Record<string, unknown>) {
 		assertedBinaryProperties,
 		context: {
 			getInputData() {
-				return [{ json: {} }];
+				return [{ json: {}, binary: inputBinary }];
 			},
 			getNodeParameter(name: string, _itemIndex: number, fallback?: unknown) {
 				requestedParameters.push(name);
@@ -68,7 +78,16 @@ function createVideoExecutionContext(parameters: Record<string, unknown>) {
 				},
 				assertBinaryData(_itemIndex: number, binaryPropertyName: string) {
 					assertedBinaryProperties.push(binaryPropertyName);
-					throw new Error(`Unexpected binary read: ${binaryPropertyName}`);
+					if (!Object.prototype.hasOwnProperty.call(binaryData, binaryPropertyName)) {
+						throw new Error(`Unexpected binary read: ${binaryPropertyName}`);
+					}
+				},
+				async getBinaryDataBuffer(_itemIndex: number, binaryPropertyName: string) {
+					const binary = binaryData[binaryPropertyName];
+					if (!binary) {
+						throw new Error(`Unexpected binary buffer read: ${binaryPropertyName}`);
+					}
+					return Buffer.from(binary.data);
 				},
 			},
 		},
@@ -107,7 +126,7 @@ test('video payload preserves explicit watermark=false for default-off requests'
 	assert.equal(payload.watermark, false);
 });
 
-test('multimodal reference create stays bounded to prompt content before payload phase', () => {
+test('multimodal reference create emits official reference content without frame roles', () => {
 	const payload = buildCreatePayload({
 		createMode: 'multimodal_reference',
 		model: 'doubao-seedance-2-0-fast-260128',
@@ -128,11 +147,21 @@ test('multimodal reference create stays bounded to prompt content before payload
 
 	assert.deepEqual(payload.content, [
 		{ type: 'text', text: 'Use the references as style guidance' },
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: { url: 'https://example.com/style.png' },
+		},
+		{
+			type: 'video_url',
+			role: 'reference_video',
+			video_url: { url: 'asset://video_asset' },
+		},
 	]);
 	assert.equal(JSON.stringify(payload).includes('first_frame'), false);
 	assert.equal(JSON.stringify(payload).includes('last_frame'), false);
-	assert.equal(JSON.stringify(payload).includes('reference_image'), false);
-	assert.equal(JSON.stringify(payload).includes('reference_video'), false);
+	assert.equal(JSON.stringify(payload).includes('reference_image'), true);
+	assert.equal(JSON.stringify(payload).includes('reference_video'), true);
 });
 
 test('existing first-frame and text-to-video payload contracts remain stable', () => {
@@ -161,7 +190,7 @@ test('existing first-frame and text-to-video payload contracts remain stable', (
 	]);
 });
 
-test('multimodal reference create executes without first or last frame reads', async () => {
+test('multimodal reference create executes with URL, asset, image binary and audio binary content', async () => {
 	const { calls, requestedParameters, assertedBinaryProperties, context } = createVideoExecutionContext({
 		generationMode: 'video',
 		operation: 'create',
@@ -181,6 +210,105 @@ test('multimodal reference create executes without first or last frame reads', a
 					materialUrl: 'https://example.com/stale-hidden-image-url.png',
 					videoAssetId: 'asset://video_asset',
 				},
+				{
+					materialType: 'image',
+					materialSource: 'binary',
+					binaryProperty: 'imageRef',
+				},
+				{
+					materialType: 'audio',
+					materialSource: 'binary',
+					binaryProperty: 'audioRef',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+	}, {
+		imageRef: {
+			mimeType: 'image/png',
+			data: 'image-bytes',
+		},
+		audioRef: {
+			mimeType: 'audio/wav',
+			data: 'audio-bytes',
+		},
+	});
+
+	const result = await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+	const contentRoles = ((body.content as Array<Record<string, unknown>>) ?? []).map(
+		(contentItem) => contentItem.role,
+	);
+	const outputJson = result[0][0].json as Record<string, unknown>;
+	const requestSummary = outputJson.requestSummary as Record<string, unknown>;
+
+	assert.equal(result[0][0].json.taskId, 'task_123');
+	assert.deepEqual(body.content, [
+		{ type: 'text', text: 'Use the references as style guidance' },
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: { url: 'https://example.com/style.png' },
+		},
+		{
+			type: 'video_url',
+			role: 'reference_video',
+			video_url: { url: 'asset://video_asset' },
+		},
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: {
+				url: `data:image/png;base64,${Buffer.from('image-bytes').toString('base64')}`,
+			},
+		},
+		{
+			type: 'audio_url',
+			role: 'reference_audio',
+			audio_url: {
+				url: `data:audio/wav;base64,${Buffer.from('audio-bytes').toString('base64')}`,
+			},
+		},
+	]);
+	assert.equal(contentRoles.includes('first_frame'), false);
+	assert.equal(contentRoles.includes('last_frame'), false);
+	assert.equal(contentRoles.includes('reference_image'), true);
+	assert.equal(contentRoles.includes('reference_video'), true);
+	assert.equal(contentRoles.includes('reference_audio'), true);
+	assert.equal(requestedParameters.some((name) => name.startsWith('firstFrame')), false);
+	assert.equal(requestedParameters.some((name) => name.startsWith('lastFrame')), false);
+	assert.deepEqual(assertedBinaryProperties, ['imageRef', 'audioRef']);
+	assert.deepEqual(requestSummary.referenceSummaries, [
+		{ index: 1, type: 'image', role: 'reference_image', source: 'url' },
+		{ index: 2, type: 'video', role: 'reference_video', source: 'asset' },
+		{ index: 3, type: 'image', role: 'reference_image', source: 'binary' },
+		{ index: 4, type: 'audio', role: 'reference_audio', source: 'binary' },
+	]);
+	assert.equal(JSON.stringify(requestSummary).includes('style.png'), false);
+	assert.equal(JSON.stringify(requestSummary).includes('video_asset'), false);
+	assert.equal(JSON.stringify(requestSummary).includes('imageRef'), false);
+	assert.equal(JSON.stringify(requestSummary).includes('audioRef'), false);
+	assert.equal(JSON.stringify(requestSummary).includes(Buffer.from('image-bytes').toString('base64')), false);
+});
+
+test('multimodal reference create rejects empty active source values before HTTP request', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'Use the references as style guidance',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'url',
+					materialUrl: '   ',
+				},
 			],
 		},
 		resolution: '720p',
@@ -190,21 +318,53 @@ test('multimodal reference create executes without first or last frame reads', a
 		advancedOptions: {},
 	});
 
-	const result = await Seedance.prototype.execute.call(context);
-	const body = calls[0].body as Record<string, unknown>;
-	const contentRoles = ((body.content as Array<Record<string, unknown>>) ?? []).map(
-		(contentItem) => contentItem.role,
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String((error as { message?: unknown }).message ?? error);
+			assert.match(message, /参考素材第 1 项的来源值不能为空/);
+			return true;
+		},
 	);
+	assert.equal(calls.length, 0);
+});
 
-	assert.equal(result[0][0].json.taskId, 'task_123');
-	assert.deepEqual(body.content, [{ type: 'text', text: 'Use the references as style guidance' }]);
-	assert.equal(contentRoles.includes('first_frame'), false);
-	assert.equal(contentRoles.includes('last_frame'), false);
-	assert.equal(contentRoles.includes('reference_image'), false);
-	assert.equal(contentRoles.includes('reference_video'), false);
-	assert.equal(requestedParameters.some((name) => name.startsWith('firstFrame')), false);
-	assert.equal(requestedParameters.some((name) => name.startsWith('lastFrame')), false);
-	assert.deepEqual(assertedBinaryProperties, []);
+test('multimodal binary reference requires MIME type', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'Use the references as style guidance',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'binary',
+					binaryProperty: 'imageRef',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+	}, {
+		imageRef: {
+			data: 'image-bytes',
+		},
+	});
+
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String((error as { message?: unknown }).message ?? error);
+			assert.match(message, /Binary 文件缺少 MIME 类型/);
+			return true;
+		},
+	);
+	assert.equal(calls.length, 0);
 });
 
 test('video polling and endpoint contracts stay stable', () => {

@@ -1,7 +1,49 @@
 import type { IDataObject } from 'n8n-workflow';
 
-import type { SeedanceCreateInput } from '../validators/create';
+import type {
+	SeedanceCreateInput,
+	SeedanceReferenceMaterialInput,
+	SeedanceReferenceMaterialSource,
+	SeedanceReferenceMaterialType,
+} from '../validators/create';
 import { validateCreateInput } from '../validators/create';
+
+type SeedanceReferenceRole = 'reference_image' | 'reference_video' | 'reference_audio';
+type SeedanceReferenceContentType = 'image_url' | 'video_url' | 'audio_url';
+
+interface SeedanceReferenceContentMapping {
+	contentType: SeedanceReferenceContentType;
+	role: SeedanceReferenceRole;
+	contentKey: SeedanceReferenceContentType;
+}
+
+const REFERENCE_CONTENT_MAPPINGS: Record<
+	SeedanceReferenceMaterialType,
+	SeedanceReferenceContentMapping
+> = {
+	image: {
+		contentType: 'image_url',
+		role: 'reference_image',
+		contentKey: 'image_url',
+	},
+	video: {
+		contentType: 'video_url',
+		role: 'reference_video',
+		contentKey: 'video_url',
+	},
+	audio: {
+		contentType: 'audio_url',
+		role: 'reference_audio',
+		contentKey: 'audio_url',
+	},
+};
+
+export interface SeedanceReferenceRequestSummary extends IDataObject {
+	index: number;
+	type: SeedanceReferenceMaterialType;
+	role: SeedanceReferenceRole;
+	source: SeedanceReferenceMaterialSource;
+}
 
 export interface SeedanceCreateRequestSummary extends IDataObject {
 	createMode: string;
@@ -10,6 +52,7 @@ export interface SeedanceCreateRequestSummary extends IDataObject {
 	referenceCount?: number;
 	referenceTypes?: string[];
 	referenceSources?: string[];
+	referenceSummaries?: SeedanceReferenceRequestSummary[];
 	resolution?: string;
 	ratio?: string;
 	duration?: number;
@@ -26,6 +69,41 @@ export interface SeedanceCreateResponse {
 	created_at?: number;
 	createdAt?: number;
 	[key: string]: IDataObject | string | number | boolean | null | undefined | Array<IDataObject | string | number | boolean>;
+}
+
+function normalizeReferenceMaterialValue(referenceMaterial: SeedanceReferenceMaterialInput): string {
+	const trimmedValue = referenceMaterial.value.trim();
+
+	if (referenceMaterial.materialSource === 'asset') {
+		return trimmedValue.startsWith('asset://') ? trimmedValue : `asset://${trimmedValue}`;
+	}
+
+	return trimmedValue;
+}
+
+function buildReferenceContentItem(referenceMaterial: SeedanceReferenceMaterialInput): IDataObject {
+	const mapping = REFERENCE_CONTENT_MAPPINGS[referenceMaterial.materialType];
+	const url = normalizeReferenceMaterialValue(referenceMaterial);
+
+	return {
+		type: mapping.contentType,
+		role: mapping.role,
+		[mapping.contentKey]: { url },
+	};
+}
+
+function buildReferenceSummaryItem(
+	referenceMaterial: SeedanceReferenceMaterialInput,
+	index: number,
+): SeedanceReferenceRequestSummary {
+	const mapping = REFERENCE_CONTENT_MAPPINGS[referenceMaterial.materialType];
+
+	return {
+		index,
+		type: referenceMaterial.materialType,
+		role: mapping.role,
+		source: referenceMaterial.materialSource,
+	};
 }
 
 export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
@@ -64,6 +142,12 @@ export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
 		});
 	}
 
+	if (input.createMode === 'multimodal_reference') {
+		for (const referenceMaterial of input.referenceMaterials ?? []) {
+			content.push(buildReferenceContentItem(referenceMaterial));
+		}
+	}
+
 	const payload: IDataObject = {
 		model: input.model,
 		content,
@@ -98,6 +182,9 @@ export function buildCreateRequestSummary(input: SeedanceCreateInput): SeedanceC
 					),
 					referenceSources: Array.from(
 						new Set((input.referenceMaterials ?? []).map((item) => item.materialSource)),
+					),
+					referenceSummaries: (input.referenceMaterials ?? []).map((item, index) =>
+						buildReferenceSummaryItem(item, index + 1),
 					),
 				}
 			: {}),

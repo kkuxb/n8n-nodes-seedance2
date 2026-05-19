@@ -280,18 +280,7 @@ test('首尾帧图生模式构造首尾两张图片，并支持 Base64', () => {
 	]);
 });
 
-test('多模态参考生视频模式允许空提示词和空参考素材', () => {
-	const payload = buildCreatePayload({
-		createMode: 'multimodal_reference',
-		model: 'doubao-seedance-2-0-260128',
-		prompt: '',
-		referenceMaterials: [],
-	});
-
-	assert.deepEqual(payload.content, []);
-});
-
-test('多模态参考生视频不会提前发送 reference role payload', () => {
+test('多模态参考生视频按提示词优先和用户素材顺序构造官方 content', () => {
 	const payload = buildCreatePayload({
 		createMode: 'multimodal_reference',
 		model: 'doubao-seedance-2-0-260128',
@@ -300,27 +289,90 @@ test('多模态参考生视频不会提前发送 reference role payload', () => 
 			{
 				materialType: 'image',
 				materialSource: 'url',
-				value: 'https://example.com/image.png',
+				value: ' https://example.com/image.png ',
+			},
+			{
+				materialType: 'audio',
+				materialSource: 'binary',
+				value: 'data:audio/wav;base64,audio_base64',
 			},
 			{
 				materialType: 'video',
 				materialSource: 'asset',
-				value: 'asset://video_asset',
+				value: 'video_asset',
 			},
 		],
 	});
 
-	assert.deepEqual(payload.content, [{ type: 'text', text: '参考素材生成视频' }]);
-	assert.equal(JSON.stringify(payload).includes('reference_image'), false);
-	assert.equal(JSON.stringify(payload).includes('reference_video'), false);
+	assert.deepEqual(payload.content, [
+		{ type: 'text', text: '参考素材生成视频' },
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: { url: 'https://example.com/image.png' },
+		},
+		{
+			type: 'audio_url',
+			role: 'reference_audio',
+			audio_url: { url: 'data:audio/wav;base64,audio_base64' },
+		},
+		{
+			type: 'video_url',
+			role: 'reference_video',
+			video_url: { url: 'asset://video_asset' },
+		},
+	]);
 	assert.equal(JSON.stringify(payload).includes('first_frame'), false);
 	assert.equal(JSON.stringify(payload).includes('last_frame'), false);
 });
 
-test('多模态 request summary 只暴露素材数量、类型和来源摘要', () => {
+test('多模态参考生视频允许只有图片或只有视频且提示词可选', () => {
+	const imagePayload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: '',
+		referenceMaterials: [
+			{
+				materialType: 'image',
+				materialSource: 'asset',
+				value: 'asset://image_asset',
+			},
+		],
+	});
+	const videoPayload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: '',
+		referenceMaterials: [
+			{
+				materialType: 'video',
+				materialSource: 'url',
+				value: 'https://example.com/video.mp4',
+			},
+		],
+	});
+
+	assert.deepEqual(imagePayload.content, [
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: { url: 'asset://image_asset' },
+		},
+	]);
+	assert.deepEqual(videoPayload.content, [
+		{
+			type: 'video_url',
+			role: 'reference_video',
+			video_url: { url: 'https://example.com/video.mp4' },
+		},
+	]);
+});
+
+test('多模态 request summary 保留聚合字段并新增逐项安全摘要', () => {
 	const summary = buildCreateRequestSummary({
 		createMode: 'multimodal_reference',
 		model: 'doubao-seedance-2-0-260128',
+		prompt: '参考素材生成视频',
 		referenceMaterials: [
 			{
 				materialType: 'image',
@@ -332,15 +384,28 @@ test('多模态 request summary 只暴露素材数量、类型和来源摘要', 
 				materialSource: 'binary',
 				value: 'voice',
 			},
+			{
+				materialType: 'video',
+				materialSource: 'asset',
+				value: 'asset://private-video-asset',
+			},
 		],
 	});
 
 	assert.equal(summary.createMode, 'multimodal_reference');
-	assert.equal(summary.referenceCount, 2);
-	assert.deepEqual(summary.referenceTypes, ['image', 'audio']);
-	assert.deepEqual(summary.referenceSources, ['url', 'binary']);
+	assert.equal(summary.prompt, '参考素材生成视频');
+	assert.equal(summary.referenceCount, 3);
+	assert.deepEqual(summary.referenceTypes, ['image', 'audio', 'video']);
+	assert.deepEqual(summary.referenceSources, ['url', 'binary', 'asset']);
+	assert.deepEqual(summary.referenceSummaries, [
+		{ index: 1, type: 'image', role: 'reference_image', source: 'url' },
+		{ index: 2, type: 'audio', role: 'reference_audio', source: 'binary' },
+		{ index: 3, type: 'video', role: 'reference_video', source: 'asset' },
+	]);
 	assert.equal(JSON.stringify(summary).includes('private-image'), false);
 	assert.equal(JSON.stringify(summary).includes('voice'), false);
+	assert.equal(JSON.stringify(summary).includes('private-video-asset'), false);
+	assert.equal(JSON.stringify(summary).includes('asset://'), false);
 });
 
 test('视频参考素材不接受 Binary 文件来源', () => {
@@ -358,6 +423,109 @@ test('视频参考素材不接受 Binary 文件来源', () => {
 				],
 			}),
 		/视频参考素材不支持 Binary 文件来源/,
+	);
+});
+
+test('多模态参考生视频拒绝空素材、只有提示词和只有音频', () => {
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				prompt: '只有提示词',
+				referenceMaterials: [],
+			}),
+		/至少提供 1 个参考图片或参考视频/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'audio',
+						materialSource: 'url',
+						value: 'https://example.com/audio.wav',
+					},
+				],
+			}),
+		/至少提供 1 个参考图片或参考视频/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: '  ',
+					},
+				],
+			}),
+		/参考素材的来源值不能为空/,
+	);
+});
+
+test('多模态参考生视频执行 Phase 15 数量上限', () => {
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: Array.from({ length: 10 }, (_, index) => ({
+					materialType: 'image' as const,
+					materialSource: 'url' as const,
+					value: `https://example.com/image-${index}.png`,
+				})),
+			}),
+		/最多支持 9 张参考图片/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: 'https://example.com/image.png',
+					},
+					...Array.from({ length: 4 }, (_, index) => ({
+						materialType: 'video' as const,
+						materialSource: 'url' as const,
+						value: `https://example.com/video-${index}.mp4`,
+					})),
+				],
+			}),
+		/最多支持 3 个参考视频/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: 'https://example.com/image.png',
+					},
+					...Array.from({ length: 4 }, (_, index) => ({
+						materialType: 'audio' as const,
+						materialSource: 'url' as const,
+						value: `https://example.com/audio-${index}.wav`,
+					})),
+				],
+			}),
+		/最多支持 3 段参考音频/,
 	);
 });
 

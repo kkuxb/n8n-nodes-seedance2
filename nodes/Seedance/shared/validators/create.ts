@@ -71,14 +71,39 @@ export function validateCreateInput(input: SeedanceCreateInput): void {
 			throw new Error('首尾帧图生视频模式下，必须提供尾帧图片。');
 		}
 	} else if (input.createMode === 'multimodal_reference') {
-		if (Array.isArray(input.referenceMaterials)) {
-			for (const referenceMaterial of input.referenceMaterials) {
-				if (
-					referenceMaterial.materialType === 'video' &&
-					referenceMaterial.materialSource === 'binary'
-				) {
-					throw new Error('视频参考素材不支持 Binary 文件来源，请使用 URL链接或火山方舟素材库。');
-				}
+		const referenceMaterials = Array.isArray(input.referenceMaterials)
+			? input.referenceMaterials
+			: [];
+		const imageCount = referenceMaterials.filter((item) => item.materialType === 'image').length;
+		const videoCount = referenceMaterials.filter((item) => item.materialType === 'video').length;
+		const audioCount = referenceMaterials.filter((item) => item.materialType === 'audio').length;
+
+		if (imageCount + videoCount === 0) {
+			throw new Error('多模态参考生视频模式下，请至少提供 1 个参考图片或参考视频。');
+		}
+
+		if (imageCount > 9) {
+			throw new Error('多模态参考生视频最多支持 9 张参考图片。');
+		}
+
+		if (videoCount > 3) {
+			throw new Error('多模态参考生视频最多支持 3 个参考视频。');
+		}
+
+		if (audioCount > 3) {
+			throw new Error('多模态参考生视频最多支持 3 段参考音频。');
+		}
+
+		for (const referenceMaterial of referenceMaterials) {
+			if (typeof referenceMaterial.value !== 'string' || referenceMaterial.value.trim() === '') {
+				throw new Error('参考素材的来源值不能为空，请填写素材URL、属性名或素材ID。');
+			}
+
+			if (
+				referenceMaterial.materialType === 'video' &&
+				referenceMaterial.materialSource === 'binary'
+			) {
+				throw new Error('视频参考素材不支持 Binary 文件来源，请使用 URL链接或火山方舟素材库。');
 			}
 		}
 	}
