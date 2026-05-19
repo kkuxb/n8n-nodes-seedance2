@@ -192,13 +192,16 @@ test('multimodal reference create executes without first or last frame reads', a
 
 	const result = await Seedance.prototype.execute.call(context);
 	const body = calls[0].body as Record<string, unknown>;
+	const contentRoles = ((body.content as Array<Record<string, unknown>>) ?? []).map(
+		(contentItem) => contentItem.role,
+	);
 
 	assert.equal(result[0][0].json.taskId, 'task_123');
 	assert.deepEqual(body.content, [{ type: 'text', text: 'Use the references as style guidance' }]);
-	assert.equal(JSON.stringify(body).includes('first_frame'), false);
-	assert.equal(JSON.stringify(body).includes('last_frame'), false);
-	assert.equal(JSON.stringify(body).includes('reference_image'), false);
-	assert.equal(JSON.stringify(body).includes('reference_video'), false);
+	assert.equal(contentRoles.includes('first_frame'), false);
+	assert.equal(contentRoles.includes('last_frame'), false);
+	assert.equal(contentRoles.includes('reference_image'), false);
+	assert.equal(contentRoles.includes('reference_video'), false);
 	assert.equal(requestedParameters.some((name) => name.startsWith('firstFrame')), false);
 	assert.equal(requestedParameters.some((name) => name.startsWith('lastFrame')), false);
 	assert.deepEqual(assertedBinaryProperties, []);
