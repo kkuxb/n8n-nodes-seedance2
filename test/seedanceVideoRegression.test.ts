@@ -18,6 +18,7 @@ const { Seedance } = nodeModule;
 function createVideoExecutionContext(
 	parameters: Record<string, unknown>,
 	binaryData: Record<string, { mimeType?: string; data?: string; buffer?: Buffer }> = {},
+	options: { forbidFrameParameterReads?: boolean } = {},
 ) {
 	const calls: Array<Record<string, unknown>> = [];
 	const requestedParameters: string[] = [];
@@ -43,6 +44,7 @@ function createVideoExecutionContext(
 				requestedParameters.push(name);
 
 				if (
+					options.forbidFrameParameterReads !== false &&
 					(name.startsWith('firstFrame') || name.startsWith('lastFrame')) &&
 					fallback === undefined
 				) {
@@ -92,6 +94,49 @@ function createVideoExecutionContext(
 			},
 		},
 	};
+}
+
+function staleMultimodalSavedWorkflowFields() {
+	return {
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'url',
+					materialUrl: 'https://example.com/stale-reference.png',
+				},
+				{
+					materialType: 'video',
+					videoMaterialSource: 'asset',
+					videoAssetId: 'stale-video-asset',
+				},
+				{
+					materialType: 'audio',
+					materialSource: 'url',
+					materialUrl: 'https://example.com/stale-audio.wav',
+				},
+			],
+		},
+	};
+}
+
+function assertNoMultimodalReferenceRoles(body: Record<string, unknown>) {
+	const bodyJson = JSON.stringify(body);
+
+	assert.equal(bodyJson.includes('reference_image'), false);
+	assert.equal(bodyJson.includes('reference_video'), false);
+	assert.equal(bodyJson.includes('reference_audio'), false);
+}
+
+function contentRoles(body: Record<string, unknown>) {
+	return ((body.content as Array<Record<string, unknown>>) ?? []).map(
+		(contentItem) => contentItem.role,
+	);
+}
+
+function assertCreateTaskPost(call: Record<string, unknown>) {
+	assert.equal(call.method, 'POST');
+	assert.match(String(call.url), /\/api\/v3\/contents\/generations\/tasks$/);
 }
 
 test('video create defaults remain unchanged after image additions', () => {
@@ -188,6 +233,154 @@ test('existing first-frame and text-to-video payload contracts remain stable', (
 			image_url: { url: 'https://example.com/frame.png' },
 		},
 	]);
+});
+
+test('old t2v execute payload ignores stale multimodal saved workflow fields', async () => {
+	const { calls, requestedParameters, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 't2v',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'A calm lake at sunset',
+		resolution: '720p',
+		ratio: '16:9',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+		...staleMultimodalSavedWorkflowFields(),
+	});
+
+	const result = await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assert.equal(calls.length, 1);
+	assertCreateTaskPost(calls[0]);
+	assert.deepEqual(body, {
+		model: 'doubao-seedance-2-0-260128',
+		content: [{ type: 'text', text: 'A calm lake at sunset' }],
+		resolution: '720p',
+		ratio: '16:9',
+		duration: 5,
+		seed: -1,
+		watermark: false,
+		execution_expires_after: 172800,
+		return_last_frame: false,
+		generate_audio: false,
+	});
+	assertNoMultimodalReferenceRoles(body);
+	assert.deepEqual(contentRoles(body), [undefined]);
+	assert.equal(requestedParameters.includes('referenceMaterials'), false);
+	assert.equal(result[0][0].json.taskId, 'task_123');
+});
+
+test('old first-frame execute payload keeps first_frame and ignores stale multimodal fields', async () => {
+	const { calls, requestedParameters, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'i2v_first',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Continue from the provided frame',
+			firstFrameInputMethod: 'url',
+			firstFrameImageUrl: 'https://example.com/first-frame.png',
+			resolution: '720p',
+			ratio: '16:9',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
+			...staleMultimodalSavedWorkflowFields(),
+		},
+		{},
+		{ forbidFrameParameterReads: false },
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assert.equal(calls.length, 1);
+	assertCreateTaskPost(calls[0]);
+	assert.deepEqual(body, {
+		model: 'doubao-seedance-2-0-260128',
+		content: [
+			{ type: 'text', text: 'Continue from the provided frame' },
+			{
+				type: 'image_url',
+				role: 'first_frame',
+				image_url: { url: 'https://example.com/first-frame.png' },
+			},
+		],
+		resolution: '720p',
+		ratio: '16:9',
+		duration: 5,
+		seed: -1,
+		watermark: false,
+		execution_expires_after: 172800,
+		return_last_frame: false,
+		generate_audio: false,
+	});
+	assertNoMultimodalReferenceRoles(body);
+	assert.deepEqual(contentRoles(body), [undefined, 'first_frame']);
+	assert.equal(requestedParameters.includes('referenceMaterials'), false);
+	assert.equal(requestedParameters.some((name) => name.startsWith('lastFrame')), false);
+	assert.equal(result[0][0].json.taskId, 'task_123');
+});
+
+test('old first-last-frame execute payload keeps frame roles and ignores stale multimodal fields', async () => {
+	const { calls, requestedParameters, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'i2v_first_last',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Move between the two provided frames',
+			firstFrameInputMethod: 'url',
+			firstFrameImageUrl: 'https://example.com/first-frame.png',
+			lastFrameInputMethod: 'url',
+			lastFrameImageUrl: 'https://example.com/last-frame.png',
+			resolution: '720p',
+			ratio: '16:9',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
+			...staleMultimodalSavedWorkflowFields(),
+		},
+		{},
+		{ forbidFrameParameterReads: false },
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assert.equal(calls.length, 1);
+	assertCreateTaskPost(calls[0]);
+	assert.deepEqual(body, {
+		model: 'doubao-seedance-2-0-260128',
+		content: [
+			{ type: 'text', text: 'Move between the two provided frames' },
+			{
+				type: 'image_url',
+				role: 'first_frame',
+				image_url: { url: 'https://example.com/first-frame.png' },
+			},
+			{
+				type: 'image_url',
+				role: 'last_frame',
+				image_url: { url: 'https://example.com/last-frame.png' },
+			},
+		],
+		resolution: '720p',
+		ratio: '16:9',
+		duration: 5,
+		seed: -1,
+		watermark: false,
+		execution_expires_after: 172800,
+		return_last_frame: false,
+		generate_audio: false,
+	});
+	assertNoMultimodalReferenceRoles(body);
+	assert.deepEqual(contentRoles(body), [undefined, 'first_frame', 'last_frame']);
+	assert.equal(requestedParameters.includes('referenceMaterials'), false);
+	assert.equal(result[0][0].json.taskId, 'task_123');
 });
 
 test('multimodal reference create executes with URL, asset, image binary and audio binary content', async () => {
