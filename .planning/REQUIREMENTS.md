@@ -55,7 +55,7 @@ Primary official source for this milestone:
 
 ### UI
 
-- [ ] **UI-01**: The existing `Seedance` node exposes multimodal references as a repeatable reference-material list with source type, media type, value/binary property, and optional label.
+- [ ] **UI-01**: The existing `Seedance` node exposes multimodal references as a repeatable `参考素材` list with `素材类型`, `素材来源`, and source-specific `素材URL` / `属性名` / `素材ID` fields. The list intentionally does not include a label field.
 - [ ] **UI-02**: The UI copy explains the official real-person face restriction and directs users to authorized Volcengine assets when relevant.
 - [ ] **UI-03**: The UI copy explains that multimodal mode can indirectly guide first/last-frame intent through prompt/reference materials, but strict first/last-frame consistency should use the existing first/last-frame mode.
 - [ ] **UI-04**: The UI keeps advanced v1.3 additions such as web search and safety identifier optional, so basic multimodal generation remains easy to configure.

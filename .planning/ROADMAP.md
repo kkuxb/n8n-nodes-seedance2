@@ -19,7 +19,7 @@ v1.3 将现有/目标的“参考视频生视频”能力升级为官方 Seedanc
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 14: 多模态入口与参考材料表单** - 用户能在现有 Seedance create 操作中选择并配置官方多模态参考生视频模式。
+- [ ] **Phase 14: 多模态入口与参考素材表单** - 用户能在现有 Seedance create 操作中选择并配置官方多模态参考生视频模式。
 - [ ] **Phase 15: 参考媒体来源与官方 payload** - 用户的图片、视频、音频和素材 ID 被归一化为官方 Seedance 2.0 content 结构。
 - [ ] **Phase 16: Seedance 2.0 参数与本地校验** - 用户在提交前获得符合官方约束的媒体、模型和生成参数校验。
 - [ ] **Phase 17: 既有模式与 lifecycle 兼容性** - 已 shipped 的视频 lifecycle 与 Seedream 图片路径在新增多模态能力后保持兼容。
@@ -27,17 +27,19 @@ v1.3 将现有/目标的“参考视频生视频”能力升级为官方 Seedanc
 
 ## Phase Details
 
-### Phase 14: 多模态入口与参考材料表单
-**Goal**: 用户能在现有 `Seedance` 视频 create 操作中清晰选择“多模态参考生视频”，并用 n8n 友好的表单配置参考材料。
+### Phase 14: 多模态入口与参考素材表单
+**Goal**: 用户能在现有 `Seedance` 视频 create 操作中清晰选择“多模态参考生视频”，并用 n8n 友好的表单配置参考素材。
 **Depends on**: Phase 13
 **Requirements**: MODE-01, MODE-03, UI-01, UI-02, UI-03, UI-04
 **Success Criteria** (what must be TRUE):
   1. 用户可以在现有 `Seedance` 节点的视频 create 操作中选择独立的“多模态参考生视频”模式。
-  2. 用户可以通过可重复的参考材料列表填写媒体类型、来源类型、URL/素材值或 binary property，并可为材料加标签。
+  2. 用户可以通过可重复的参考素材列表填写素材类型、素材来源、素材 URL、素材 ID 或 binary 属性名。
   3. 用户在多模态模式中看不到会误导其混用 strict first-frame/last-frame role 的配置路径。
   4. 节点文案说明真人脸参考限制，以及严格首尾帧一致性应继续使用现有首帧/首尾帧模式。
   5. web search、safety identifier 等高级选项保持可选，基础多模态配置不需要额外复杂步骤。
-**Plans**: TBD
+**Plans**:
+- Wave 1: `14-01-PLAN.md` - Expose multimodal create mode and reference素材 form.
+- Wave 2 *(blocked on Wave 1 completion)*: `14-02-PLAN.md` - Make multimodal form execution-safe and regression-covered.
 **UI hint**: yes
 
 ### Phase 15: 参考媒体来源与官方 payload
@@ -135,7 +137,7 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 14. 多模态入口与参考材料表单 | v1.3 | 0/TBD | Not started | - |
+| 14. 多模态入口与参考素材表单 | v1.3 | 0/2 | Planned | - |
 | 15. 参考媒体来源与官方 payload | v1.3 | 0/TBD | Not started | - |
 | 16. Seedance 2.0 参数与本地校验 | v1.3 | 0/TBD | Not started | - |
 | 17. 既有模式与 lifecycle 兼容性 | v1.3 | 0/TBD | Not started | - |
