@@ -5,8 +5,8 @@ import type {
   IHttpRequestOptions,
 } from 'n8n-workflow';
 
-import type { SEEDANCE_TASK_STATUSES } from './constants';
 import type {
+  SEEDANCE_TASK_STATUSES,
   SEEDREAM_IMAGE_ASPECT_RATIOS,
   SEEDREAM_IMAGE_MODEL,
   SEEDREAM_IMAGE_RESOLUTIONS,
@@ -120,11 +120,13 @@ export interface SeedanceApiErrorPayload {
   [key: string]: unknown;
 }
 
-export interface SeedanceVideoDownloadResult {
+export interface SeedanceBinaryDownloadResult {
   data: string;
   mimeType: string;
   fileName: string;
 }
+
+export type SeedanceVideoDownloadResult = SeedanceBinaryDownloadResult;
 
 export type SeedanceRequestFunctions = Pick<
   IExecuteFunctions,

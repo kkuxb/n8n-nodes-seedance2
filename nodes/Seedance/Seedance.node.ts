@@ -12,7 +12,7 @@ import { buildAggregatedListOutput, mapTaskResponse, selectSingleTaskResponse } 
 import { getFriendlyDeleteError, normalizeSeedanceError } from './shared/mappers/errors';
 import { pollTaskUntilSettled } from './shared/polling/getTaskPolling';
 import { getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint } from './shared/transport/endpoints';
-import { downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
+import { downloadSeedanceLastFrame, downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
 import {
 	SEEDANCE_VIDEO_IMAGE_MAX_BYTES,
 	SEEDANCE_VIDEO_IMAGE_MIME_TYPES,
@@ -528,6 +528,26 @@ export class Seedance implements INodeType {
 									data: videoBinary.data,
 									mimeType: videoBinary.mimeType,
 									fileName: videoBinary.fileName,
+								},
+							};
+						}
+
+						if (
+							taskResult.status === 'succeeded' &&
+							typeof taskResult.lastFrameUrl === 'string' &&
+							taskResult.lastFrameUrl !== ''
+						) {
+							const lastFrameBinary = await downloadSeedanceLastFrame(
+								this,
+								taskResult.lastFrameUrl,
+								taskId,
+							);
+							executionData.binary = {
+								...executionData.binary,
+								lastFrame: {
+									data: lastFrameBinary.data,
+									mimeType: lastFrameBinary.mimeType,
+									fileName: lastFrameBinary.fileName,
 								},
 							};
 						}

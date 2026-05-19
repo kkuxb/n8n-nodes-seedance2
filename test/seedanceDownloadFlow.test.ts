@@ -82,7 +82,7 @@ async function withImmediatePollingTime(callback: () => Promise<void>) {
 	}
 }
 
-test('wait + download + succeeded 返回原 json 并附加 binary.video', async () => {
+test('wait + download + succeeded 返回原 json 并附加 binary.video 和 binary.lastFrame', async () => {
 	const { calls, context } = createExecutionContext(
 		{
 			operation: 'get',
@@ -97,12 +97,19 @@ test('wait + download + succeeded 返回原 json 并附加 binary.video', async 
 				status: 'succeeded',
 				content: {
 					video_url: 'https://example.com/assets/task_download_success.mp4',
+					last_frame_url: 'https://example.com/assets/task_download_success-last-frame.png',
 				},
 			},
 			{
 				body: Buffer.from('video-binary-content'),
 				headers: {
 					'content-type': 'video/mp4',
+				},
+			},
+			{
+				body: Buffer.from('last-frame-binary-content'),
+				headers: {
+					'content-type': 'image/png',
 				},
 			},
 		],
@@ -114,13 +121,20 @@ test('wait + download + succeeded 返回原 json 并附加 binary.video', async 
 	assert.equal(output.json.taskId, 'task_download_success');
 	assert.equal(output.json.status, 'succeeded');
 	assert.equal(output.json.videoUrl, 'https://example.com/assets/task_download_success.mp4');
+	assert.equal(output.json.lastFrameUrl, 'https://example.com/assets/task_download_success-last-frame.png');
 	assert.equal(output.binary?.video?.mimeType, 'video/mp4');
 	assert.equal(output.binary?.video?.fileName, 'task_download_success.mp4');
 	assert.equal(output.binary?.video?.data, Buffer.from('video-binary-content').toString('base64'));
-	assert.equal(calls.length, 2);
+	assert.equal(output.binary?.lastFrame?.mimeType, 'image/png');
+	assert.equal(output.binary?.lastFrame?.fileName, 'task_download_success-last-frame.png');
+	assert.equal(output.binary?.lastFrame?.data, Buffer.from('last-frame-binary-content').toString('base64'));
+	assert.equal(calls.length, 3);
 	assert.equal(calls[1].url, 'https://example.com/assets/task_download_success.mp4');
+	assert.equal(calls[2].url, 'https://example.com/assets/task_download_success-last-frame.png');
 	assert.deepEqual(calls[1].headers, {});
+	assert.deepEqual(calls[2].headers, {});
 	assert.equal(calls[1].sendCredentialsOnCrossOriginRedirect, false);
+	assert.equal(calls[2].sendCredentialsOnCrossOriginRedirect, false);
 });
 
 test('wait + download + 非 succeeded 终态不会触发下载', async () => {
@@ -292,6 +306,48 @@ test('succeeded 但 downloadVideo=false 时不会下载', async () => {
 	assert.equal(output.binary, undefined);
 	assert.equal(calls.length, 1);
 	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
+});
+
+test('succeeded 且 downloadVideo=false 时仍会下载 lastFrameUrl', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			operation: 'get',
+			taskId: 'task_success_last_frame_only',
+			waitForCompletion: true,
+			waitTimeoutMinutes: 20,
+			downloadVideo: false,
+		},
+		[
+			{
+				id: 'task_success_last_frame_only',
+				status: 'succeeded',
+				content: {
+					video_url: 'https://example.com/assets/task_success_last_frame_only.mp4',
+					last_frame_url: 'https://example.com/assets/task_success_last_frame_only.jpeg',
+				},
+			},
+			{
+				body: Buffer.from('last-frame-only-content'),
+				headers: {
+					'content-type': 'image/jpeg',
+				},
+			},
+		],
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const output = result[0][0];
+
+	assert.equal(output.json.status, 'succeeded');
+	assert.equal(output.json.videoUrl, 'https://example.com/assets/task_success_last_frame_only.mp4');
+	assert.equal(output.json.lastFrameUrl, 'https://example.com/assets/task_success_last_frame_only.jpeg');
+	assert.equal(output.binary?.video, undefined);
+	assert.equal(output.binary?.lastFrame?.mimeType, 'image/jpeg');
+	assert.equal(output.binary?.lastFrame?.fileName, 'task_success_last_frame_only-last-frame.jpg');
+	assert.equal(output.binary?.lastFrame?.data, Buffer.from('last-frame-only-content').toString('base64'));
+	assert.equal(calls.length, 2);
+	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
+	assert.equal(calls[1].url, 'https://example.com/assets/task_success_last_frame_only.jpeg');
 });
 
 test('succeeded 但 videoUrl 为空或缺失时不会下载', async () => {

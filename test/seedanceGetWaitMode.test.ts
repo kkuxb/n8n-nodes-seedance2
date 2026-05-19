@@ -244,7 +244,7 @@ test('节点描述公开 waitForCompletion 与 waitTimeoutMinutes 参数', () =>
 	assert.ok(downloadVideo);
 	assert.equal(waitForCompletion?.default, true);
 	assert.equal(waitTimeoutMinutes?.default, 20);
-	assert.equal(downloadVideo?.default, false);
+	assert.equal(downloadVideo?.default, true);
 	assert.match(String(waitForCompletion?.description), /20 秒/);
 	assert.match(String(waitTimeoutMinutes?.description), /20 分钟/);
 	assert.match(String(downloadVideo?.description), /binary\.video/);

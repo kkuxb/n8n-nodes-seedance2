@@ -14,6 +14,7 @@ import type {
   SeedanceRequestContext,
   SeedanceRequestFunctions,
   SeedanceRequestOptions,
+  SeedanceBinaryDownloadResult,
   SeedanceVideoDownloadResult,
 } from '../types';
 
@@ -69,6 +70,27 @@ function getVideoFileExtension(url: string, mimeType: string): string {
 		return 'mp4';
 	}
 
+	return getUrlFileExtension(url, 'mp4');
+}
+
+function getImageFileExtension(url: string, mimeType: string): string {
+	const imageMimeExtensions: Record<string, string> = {
+		'image/jpeg': 'jpg',
+		'image/jpg': 'jpg',
+		'image/png': 'png',
+		'image/webp': 'webp',
+		'image/gif': 'gif',
+		'image/bmp': 'bmp',
+		'image/tiff': 'tiff',
+		'image/heic': 'heic',
+		'image/heif': 'heif',
+	};
+	const normalizedMimeType = mimeType.split(';')[0]?.trim().toLowerCase() ?? '';
+
+	return imageMimeExtensions[normalizedMimeType] ?? getUrlFileExtension(url, 'png');
+}
+
+function getUrlFileExtension(url: string, fallback: string): string {
 	try {
 		const pathname = new URL(url).pathname;
 		const extension = pathname.split('.').pop()?.toLowerCase();
@@ -77,21 +99,23 @@ function getVideoFileExtension(url: string, mimeType: string): string {
 			return extension;
 		}
 	} catch {
-		// Ignore URL parsing errors and fall back to mp4.
+		// Ignore URL parsing errors and fall back to the provided extension.
 	}
 
-	return 'mp4';
+	return fallback;
 }
 
-export async function downloadSeedanceVideo(
+async function downloadSeedanceBinaryAsset(
 	executor: SeedanceRequestFunctions,
-	videoUrl: string,
-	taskId?: string,
-): Promise<SeedanceVideoDownloadResult> {
+	url: string,
+	fileNameStem: string,
+	defaultMimeType: string,
+	getFileExtension: (url: string, mimeType: string) => string,
+): Promise<SeedanceBinaryDownloadResult> {
 	try {
 		const response = await executor.helpers.httpRequest({
 			method: 'GET',
-			url: videoUrl,
+			url,
 			headers: {},
 			json: false,
 			encoding: 'arraybuffer',
@@ -103,16 +127,49 @@ export async function downloadSeedanceVideo(
 		const mimeType =
 			typeof response.headers?.['content-type'] === 'string' && response.headers['content-type'] !== ''
 				? response.headers['content-type']
-				: 'video/mp4';
-		const fileExtension = getVideoFileExtension(videoUrl, mimeType);
-		const safeTaskId = typeof taskId === 'string' && taskId !== '' ? taskId : 'seedance-video';
+				: defaultMimeType;
+		const fileExtension = getFileExtension(url, mimeType);
 
 		return {
 			data: body.toString('base64'),
 			mimeType,
-			fileName: `${safeTaskId}.${fileExtension}`,
+			fileName: `${fileNameStem}.${fileExtension}`,
 		};
 	} catch (error) {
 		throw normalizeSeedanceDownloadError(error);
 	}
+}
+
+export async function downloadSeedanceVideo(
+	executor: SeedanceRequestFunctions,
+	videoUrl: string,
+	taskId?: string,
+): Promise<SeedanceVideoDownloadResult> {
+	const safeTaskId = typeof taskId === 'string' && taskId !== '' ? taskId : 'seedance-video';
+	const mimeType = 'video/mp4';
+
+	return await downloadSeedanceBinaryAsset(
+		executor,
+		videoUrl,
+		safeTaskId,
+		mimeType,
+		getVideoFileExtension,
+	);
+}
+
+export async function downloadSeedanceLastFrame(
+	executor: SeedanceRequestFunctions,
+	lastFrameUrl: string,
+	taskId?: string,
+): Promise<SeedanceBinaryDownloadResult> {
+	const safeTaskId = typeof taskId === 'string' && taskId !== '' ? taskId : 'seedance-last-frame';
+	const mimeType = 'image/png';
+
+	return await downloadSeedanceBinaryAsset(
+		executor,
+		lastFrameUrl,
+		`${safeTaskId}-last-frame`,
+		mimeType,
+		getImageFileExtension,
+	);
 }

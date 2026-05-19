@@ -177,6 +177,26 @@ test('首尾帧字段不会在多模态参考生视频模式显示', () => {
 	}
 });
 
+test('首尾帧图生视频 Binary 输入方式显示为 Binary文件', () => {
+	const firstFrameInputMethod = createOperationProperties.find(
+		(property) => property.name === 'firstFrameInputMethod',
+	);
+	const lastFrameInputMethod = createOperationProperties.find(
+		(property) => property.name === 'lastFrameInputMethod',
+	);
+
+	assert.ok(firstFrameInputMethod);
+	assert.ok(lastFrameInputMethod);
+	assert.deepEqual(firstFrameInputMethod.options, [
+		{ name: '图片 URL', value: 'url' },
+		{ name: 'Binary文件', value: 'binary' },
+	]);
+	assert.deepEqual(lastFrameInputMethod.options, [
+		{ name: '图片 URL', value: 'url' },
+		{ name: 'Binary文件', value: 'binary' },
+	]);
+});
+
 test('真人脸限制提示放在图片相关取值字段描述中', () => {
 	const notice = 'Seedance 2.0 当前只接受两类真人脸参考素材';
 	const referenceMaterialsProperty = getReferenceMaterialsProperty();

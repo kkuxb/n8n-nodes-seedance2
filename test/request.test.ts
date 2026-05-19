@@ -10,7 +10,7 @@ const requestModule = await import('../dist/nodes/Seedance/shared/transport/requ
 const { SEEDANCE_AUTH_HEADER, SEEDANCE_BASE_URL, SEEDANCE_TASK_STATUSES } = constantsModule;
 const { normalizeSeedanceError, getFriendlyDeleteError, normalizeSeedanceDownloadError } = errorsModule;
 const { buildSeedanceEndpointUrl, getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint, normalizeSeedancePath } = endpointsModule;
-const { buildSeedanceAuthHeaders, buildSeedanceHttpRequestOptions, downloadSeedanceVideo } = requestModule;
+const { buildSeedanceAuthHeaders, buildSeedanceHttpRequestOptions, downloadSeedanceLastFrame, downloadSeedanceVideo } = requestModule;
 
 test('从 apiKey 构造 Bearer 鉴权头', () => {
   const headers = buildSeedanceAuthHeaders('secret-key');
@@ -205,6 +205,40 @@ test('视频下载 helper 返回 binary-ready 结构', async () => {
 	assert.equal(result.data, Buffer.from('video-bytes').toString('base64'));
 	assert.equal(calls.length, 1);
 	assert.equal(calls[0].url, 'https://example.com/task_123.mp4');
+	assert.deepEqual(calls[0].headers, {});
+	assert.equal(calls[0].sendCredentialsOnCrossOriginRedirect, false);
+	assert.equal(calls[0].returnFullResponse, true);
+	assert.equal(calls[0].encoding, 'arraybuffer');
+});
+
+test('尾帧图下载 helper 返回 binary-ready 结构', async () => {
+	const calls: Array<Record<string, unknown>> = [];
+	const result = await downloadSeedanceLastFrame(
+		{
+			async getCredentials() {
+				return { apiKey: 'test-api-key' };
+			},
+			helpers: {
+				async httpRequest(options: Record<string, unknown>) {
+					calls.push(options);
+					return {
+						body: Buffer.from('last-frame-bytes'),
+						headers: {
+							'content-type': 'image/webp',
+						},
+					};
+				},
+			},
+		} as never,
+		'https://example.com/task_123_tail',
+		'task_123',
+	);
+
+	assert.equal(result.mimeType, 'image/webp');
+	assert.equal(result.fileName, 'task_123-last-frame.webp');
+	assert.equal(result.data, Buffer.from('last-frame-bytes').toString('base64'));
+	assert.equal(calls.length, 1);
+	assert.equal(calls[0].url, 'https://example.com/task_123_tail');
 	assert.deepEqual(calls[0].headers, {});
 	assert.equal(calls[0].sendCredentialsOnCrossOriginRedirect, false);
 	assert.equal(calls[0].returnFullResponse, true);

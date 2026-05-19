@@ -68,7 +68,7 @@ export const createOperationProperties: INodeProperties[] = [
 		default: 'url',
 		options: [
 			{ name: '图片 URL', value: 'url' },
-			{ name: '二进制数据', value: 'binary' },
+			{ name: 'Binary文件', value: 'binary' },
 		],
 		displayOptions: {
 			show: {
@@ -112,7 +112,7 @@ export const createOperationProperties: INodeProperties[] = [
 		default: 'url',
 		options: [
 			{ name: '图片 URL', value: 'url' },
-			{ name: '二进制数据', value: 'binary' },
+			{ name: 'Binary文件', value: 'binary' },
 		],
 		displayOptions: {
 			show: {
