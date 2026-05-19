@@ -4,9 +4,11 @@
 
 **Last shipped version:** v1.2
 **Last shipped date:** 2026-04-20
-**Status:** v1.3 planning started.
+**Status:** v1.3 implementation in progress; Phase 15 complete, Phase 16 next.
 
 v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` node while preserving the previously shipped Seedance video lifecycle. The node now supports mode-first video/image UX, prompt-only and reference-driven image generation, default binary image output, grouped image generation constraints, and execute-level regression coverage for image request shaping.
+
+v1.3 Phase 14 added the Seedance 2.0 multimodal reference entry point and reference material form. Phase 15 now maps image, video, audio, URL, binary, and asset sources into the official Seedance 2.0 multimodal content payload while preserving existing video lifecycle behavior.
 
 ## Current Milestone: v1.3 Seedance 2.0 multimodal reference video generation
 
@@ -51,7 +53,8 @@ v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` n
 | 默认图片结果输出为 n8n binary | 降低用户对 24 小时有效 URL 的依赖 | ✓ Shipped in v1.2 |
 | 保持 Seedance 视频 lifecycle 合同不回退 | 图片能力必须是 additive，不破坏 create/get/list/delete 的既有行为 | ✓ Verified through v1.2 |
 | PNG branding 继续作为已接受技术债 | 当前项目选择 PNG 资源，即使社区节点 lint 倾向 SVG | ✓ Accepted debt |
-| v1.3 先研究官方 Seedance 2.0 文档再实现多模态参考生视频 | Seedance 2.0 API 文档仍在更新，需避免按旧 Seedance 1.x 或非官方字段假设实现 | — Pending |
+| v1.3 先研究官方 Seedance 2.0 文档再实现多模态参考生视频 | Seedance 2.0 API 文档仍在更新，需避免按旧 Seedance 1.x 或非官方字段假设实现 | ✓ Phase 14-15 applied |
+| Seedance 2.0 多模态参考素材使用官方 content roles | 图片、视频、音频分别映射为 `reference_image`、`reference_video`、`reference_audio`，并只在摘要中暴露安全元数据 | ✓ Verified in Phase 15 |
 
 ## Archived Context
 
@@ -74,4 +77,4 @@ This document evolves at milestone boundaries.
 - Start each new milestone with `/gsd-new-milestone` so requirements stay milestone-scoped and context cost remains bounded.
 
 ---
-*Last updated: 2026-05-18 after starting v1.3 milestone*
+*Last updated: 2026-05-19 after completing Phase 15*

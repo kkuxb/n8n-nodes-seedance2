@@ -23,19 +23,19 @@ Primary official source for this milestone:
 
 ### References
 
-- [ ] **REF-01**: User can add 0-9 reference images in multimodal mode, each mapped to official `content` item type `image_url` with role `reference_image`.
-- [ ] **REF-02**: User can add 0-3 reference videos in multimodal mode, each mapped to official `content` item type `video_url` with role `reference_video`.
-- [ ] **REF-03**: User can add 0-3 reference audio files in multimodal mode, each mapped to official `content` item type `audio_url` with role `reference_audio`.
-- [ ] **REF-04**: User can combine reference images, reference videos, reference audio, and optional prompt text in the official supported multimodal combinations.
-- [ ] **REF-05**: User cannot submit audio-only multimodal requests; at least one reference image or reference video is required when audio is present.
+- [x] **REF-01**: User can add 0-9 reference images in multimodal mode, each mapped to official `content` item type `image_url` with role `reference_image`.
+- [x] **REF-02**: User can add 0-3 reference videos in multimodal mode, each mapped to official `content` item type `video_url` with role `reference_video`.
+- [x] **REF-03**: User can add 0-3 reference audio files in multimodal mode, each mapped to official `content` item type `audio_url` with role `reference_audio`.
+- [x] **REF-04**: User can combine reference images, reference videos, reference audio, and optional prompt text in the official supported multimodal combinations.
+- [x] **REF-05**: User cannot submit audio-only multimodal requests; at least one reference image or reference video is required when audio is present.
 
 ### Sources
 
-- [ ] **SRC-01**: User can provide reference image sources as public URL, image Base64/data URL from n8n binary, or Volcengine `asset://` material ID/URI.
-- [ ] **SRC-02**: User can provide reference video sources as public URL or Volcengine `asset://` material ID/URI.
-- [ ] **SRC-03**: User can provide reference audio sources as public URL, audio Base64/data URL from n8n binary, or Volcengine `asset://` material ID/URI.
-- [ ] **SRC-04**: User entering a bare Volcengine asset ID can have it normalized to the official `asset://<ASSET_ID>` form where appropriate.
-- [ ] **SRC-05**: User is not offered video binary direct upload in v1.3 because the official Seedance 2.0 create-task document lists video URL and asset ID, not video Base64.
+- [x] **SRC-01**: User can provide reference image sources as public URL, image Base64/data URL from n8n binary, or Volcengine `asset://` material ID/URI.
+- [x] **SRC-02**: User can provide reference video sources as public URL or Volcengine `asset://` material ID/URI.
+- [x] **SRC-03**: User can provide reference audio sources as public URL, audio Base64/data URL from n8n binary, or Volcengine `asset://` material ID/URI.
+- [x] **SRC-04**: User entering a bare Volcengine asset ID can have it normalized to the official `asset://<ASSET_ID>` form where appropriate.
+- [x] **SRC-05**: User is not offered video binary direct upload in v1.3 because the official Seedance 2.0 create-task document lists video URL and asset ID, not video Base64.
 
 ### Validation
 
@@ -48,10 +48,10 @@ Primary official source for this milestone:
 
 ### Payload
 
-- [ ] **PAY-01**: The create payload builder emits official `content` objects for text, `image_url`, `video_url`, and `audio_url` in multimodal mode.
+- [x] **PAY-01**: The create payload builder emits official `content` objects for text, `image_url`, `video_url`, and `audio_url` in multimodal mode.
 - [ ] **PAY-02**: The create payload builder preserves the existing payload contract for 文生视频、首帧图生视频、首尾帧图生视频.
 - [ ] **PAY-03**: The create payload builder sends supported generation options in the request body instead of appending weakly-validated prompt suffix parameters.
-- [ ] **PAY-04**: The request summary reports model, mode, prompt presence, reference counts, reference types, roles, source kinds, and option values without raw media payloads.
+- [x] **PAY-04**: The request summary reports model, mode, prompt presence, reference counts, reference types, roles, source kinds, and option values without raw media payloads.
 
 ### UI
 
@@ -104,26 +104,26 @@ Which phases cover which requirements.
 | MODE-01 | Phase 14 | Complete |
 | MODE-02 | Phase 17 | Pending |
 | MODE-03 | Phase 14 | Complete |
-| REF-01 | Phase 15 | Pending |
-| REF-02 | Phase 15 | Pending |
-| REF-03 | Phase 15 | Pending |
-| REF-04 | Phase 15 | Pending |
-| REF-05 | Phase 15 | Pending |
-| SRC-01 | Phase 15 | Pending |
-| SRC-02 | Phase 15 | Pending |
-| SRC-03 | Phase 15 | Pending |
-| SRC-04 | Phase 15 | Pending |
-| SRC-05 | Phase 15 | Pending |
+| REF-01 | Phase 15 | Complete |
+| REF-02 | Phase 15 | Complete |
+| REF-03 | Phase 15 | Complete |
+| REF-04 | Phase 15 | Complete |
+| REF-05 | Phase 15 | Complete |
+| SRC-01 | Phase 15 | Complete |
+| SRC-02 | Phase 15 | Complete |
+| SRC-03 | Phase 15 | Complete |
+| SRC-04 | Phase 15 | Complete |
+| SRC-05 | Phase 15 | Complete |
 | VAL-01 | Phase 16 | Pending |
 | VAL-02 | Phase 16 | Pending |
 | VAL-03 | Phase 16 | Pending |
 | VAL-04 | Phase 16 | Pending |
 | VAL-05 | Phase 16 | Pending |
 | VAL-06 | Phase 16 | Pending |
-| PAY-01 | Phase 15 | Pending |
+| PAY-01 | Phase 15 | Complete |
 | PAY-02 | Phase 17 | Pending |
 | PAY-03 | Phase 16 | Pending |
-| PAY-04 | Phase 15 | Pending |
+| PAY-04 | Phase 15 | Complete |
 | UI-01 | Phase 14 | Complete |
 | UI-02 | Phase 14 | Complete |
 | UI-03 | Phase 14 | Complete |
