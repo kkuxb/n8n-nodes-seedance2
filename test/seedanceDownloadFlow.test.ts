@@ -62,6 +62,26 @@ function createExecutionContext(parameters: Record<string, unknown>, responses: 
 	};
 }
 
+async function withImmediatePollingTime(callback: () => Promise<void>) {
+	const originalDateNow = Date.now;
+	const originalSetTimeout = globalThis.setTimeout;
+	let now = 0;
+
+	Date.now = () => now;
+	globalThis.setTimeout = ((handler: (...args: unknown[]) => void, _timeout?: number, ...args: unknown[]) => {
+		now += 20_000;
+		handler(...args);
+		return 0 as unknown as ReturnType<typeof setTimeout>;
+	}) as unknown as typeof setTimeout;
+
+	try {
+		await callback();
+	} finally {
+		Date.now = originalDateNow;
+		globalThis.setTimeout = originalSetTimeout;
+	}
+}
+
 test('wait + download + succeeded 返回原 json 并附加 binary.video', async () => {
 	const { calls, context } = createExecutionContext(
 		{
@@ -242,4 +262,91 @@ test('wait disabled 时即使 downloadVideo=true 也不会下载', async () => {
 	assert.equal(output.binary, undefined);
 	assert.equal(calls.length, 1);
 	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
+});
+
+test('succeeded 但 downloadVideo=false 时不会下载', async () => {
+	const { calls, context } = createExecutionContext(
+		{
+			operation: 'get',
+			taskId: 'task_success_download_false',
+			waitForCompletion: true,
+			waitTimeoutMinutes: 20,
+			downloadVideo: false,
+		},
+		[
+			{
+				id: 'task_success_download_false',
+				status: 'succeeded',
+				content: {
+					video_url: 'https://example.com/assets/task_success_download_false.mp4',
+				},
+			},
+		],
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const output = result[0][0];
+
+	assert.equal(output.json.status, 'succeeded');
+	assert.equal(output.json.videoUrl, 'https://example.com/assets/task_success_download_false.mp4');
+	assert.equal(output.binary, undefined);
+	assert.equal(calls.length, 1);
+	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
+});
+
+test('succeeded 但 videoUrl 为空或缺失时不会下载', async () => {
+	for (const content of [{ video_url: '' }, {}]) {
+		const { calls, context } = createExecutionContext(
+			{
+				operation: 'get',
+				taskId: 'task_success_without_video_url',
+				waitForCompletion: true,
+				waitTimeoutMinutes: 20,
+				downloadVideo: true,
+			},
+			[
+				{
+					id: 'task_success_without_video_url',
+					status: 'succeeded',
+					content,
+				},
+			],
+		);
+
+		const result = await Seedance.prototype.execute.call(context);
+		const output = result[0][0];
+
+		assert.equal(output.json.status, 'succeeded');
+		assert.equal(output.binary, undefined);
+		assert.equal(calls.length, 1);
+		assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
+	}
+});
+
+test('timeout running 任务即使 downloadVideo=true 也不会下载', async () => {
+	await withImmediatePollingTime(async () => {
+		const { calls, context } = createExecutionContext(
+			{
+				operation: 'get',
+				taskId: 'task_download_timeout',
+				waitForCompletion: true,
+				waitTimeoutMinutes: 1,
+				downloadVideo: true,
+			},
+			[
+				{ id: 'task_download_timeout', status: 'queued' },
+				{ id: 'task_download_timeout', status: 'running' },
+				{ id: 'task_download_timeout', status: 'running' },
+			],
+		);
+
+		const result = await Seedance.prototype.execute.call(context);
+		const output = result[0][0];
+
+		assert.equal(output.json.status, 'running');
+		assert.equal(output.json.timedOut, true);
+		assert.equal(output.binary, undefined);
+		assert.equal(calls.length, 3);
+		assert.equal(calls.every((call) => String(call.url).includes('/api/v3/contents/generations/tasks')), true);
+	});
 });

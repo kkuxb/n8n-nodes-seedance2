@@ -18,7 +18,10 @@ const { Seedance } = nodeModule;
 function createVideoExecutionContext(
 	parameters: Record<string, unknown>,
 	binaryData: Record<string, { mimeType?: string; data?: string; buffer?: Buffer }> = {},
-	options: { forbidFrameParameterReads?: boolean } = {},
+	options: {
+		forbidFrameParameterReads?: boolean;
+		responses?: Array<Record<string, unknown>>;
+	} = {},
 ) {
 	const calls: Array<Record<string, unknown>> = [];
 	const requestedParameters: string[] = [];
@@ -70,8 +73,14 @@ function createVideoExecutionContext(
 				return { apiKey: 'test-api-key' };
 			},
 			helpers: {
-				async httpRequest(options: Record<string, unknown>) {
-					calls.push(options);
+				async httpRequest(requestOptions: Record<string, unknown>) {
+					calls.push(requestOptions);
+					const next = options.responses?.shift();
+
+					if (next) {
+						return next;
+					}
+
 					return {
 						id: 'task_123',
 						status: 'queued',
@@ -838,6 +847,90 @@ test('execute-level create body uses official fields and excludes deferred optio
 	assert.equal(bodyJson.includes('web_search'), false);
 	assert.equal(bodyJson.includes('safety_identifier'), false);
 	assert.equal(bodyJson.includes('"tools"'), false);
+});
+
+test('list operation sends locked filters and returns one aggregated tasks item', async () => {
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'list',
+			returnAll: false,
+			pageNum: 2,
+			pageSize: 25,
+			additionalFields: {
+				status: 'succeeded',
+				taskIds: ' task_a, ,task_b ',
+				model: 'doubao-seedance-2-0-260128',
+				serviceTier: 'standard',
+			},
+		},
+		{},
+		{
+			responses: [
+				{
+					items: [
+						{ id: 'task_a', status: 'succeeded', content: { video_url: 'https://example.com/a.mp4' } },
+						{ id: 'task_b', status: 'running' },
+					],
+				},
+			],
+		},
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const output = result[0][0].json as Record<string, unknown>;
+	const tasks = output.tasks as Array<Record<string, unknown>>;
+
+	assert.equal(calls.length, 1);
+	assert.equal(calls[0].method, 'GET');
+	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks$/);
+	assert.deepEqual(calls[0].qs, {
+		'filter.status': 'succeeded',
+		'filter.task_ids': ['task_a', 'task_b'],
+		'filter.model': 'doubao-seedance-2-0-260128',
+		'filter.service_tier': 'standard',
+		page_num: 2,
+		page_size: 25,
+	});
+	assert.equal(result[0].length, 1);
+	assert.equal(output.count, 2);
+	assert.equal(output.returnAll, false);
+	assert.equal(output.pageNum, 2);
+	assert.equal(output.pageSize, 25);
+	assert.match(String((output.retention as Record<string, unknown>).message), /7 天/);
+	assert.equal(tasks[0].taskId, 'task_a');
+	assert.equal(tasks[0].isSuccess, true);
+	assert.equal(tasks[1].taskId, 'task_b');
+	assert.equal(tasks[1].shouldPoll, true);
+});
+
+test('delete operation sends locked path and returns success envelope', async () => {
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'delete',
+			taskId: 'task delete/123',
+		},
+		{},
+		{ responses: [{}] },
+	);
+
+	const result = await Seedance.prototype.execute.call(context);
+	const output = result[0][0].json as Record<string, unknown>;
+
+	assert.equal(calls.length, 1);
+	assert.equal(calls[0].method, 'DELETE');
+	assert.match(
+		String(calls[0].url),
+		/\/api\/v3\/contents\/generations\/tasks\/task%20delete%2F123$/,
+	);
+	assert.deepEqual(output, {
+		success: true,
+		taskId: 'task delete/123',
+		action: 'deleted_or_cancelled',
+		message: '已向 Seedance 提交取消或删除请求。实际结果取决于任务当前状态。',
+	});
+	assert.deepEqual(result[0][0].pairedItem, { item: 0 });
 });
 
 test('video polling and endpoint contracts stay stable', () => {
