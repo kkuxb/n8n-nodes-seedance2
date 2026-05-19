@@ -17,7 +17,7 @@ const { Seedance } = nodeModule;
 
 function createVideoExecutionContext(
 	parameters: Record<string, unknown>,
-	binaryData: Record<string, { mimeType?: string; data: string }> = {},
+	binaryData: Record<string, { mimeType?: string; data?: string; buffer?: Buffer }> = {},
 ) {
 	const calls: Array<Record<string, unknown>> = [];
 	const requestedParameters: string[] = [];
@@ -87,7 +87,7 @@ function createVideoExecutionContext(
 					if (!binary) {
 						throw new Error(`Unexpected binary buffer read: ${binaryPropertyName}`);
 					}
-					return Buffer.from(binary.data);
+					return binary.buffer ?? Buffer.from(binary.data ?? '');
 				},
 			},
 		},
@@ -293,6 +293,9 @@ test('multimodal reference create executes with URL, asset, image binary and aud
 	assert.equal(JSON.stringify(requestSummary).includes('imageRef'), false);
 	assert.equal(JSON.stringify(requestSummary).includes('audioRef'), false);
 	assert.equal(JSON.stringify(requestSummary).includes(Buffer.from('image-bytes').toString('base64')), false);
+	assert.equal(JSON.stringify(requestSummary).includes('image/png'), false);
+	assert.equal(JSON.stringify(requestSummary).includes('audio/wav'), false);
+	assert.equal(JSON.stringify(requestSummary).includes('byteLength'), false);
 });
 
 test('multimodal reference create rejects empty active source values before HTTP request', async () => {
@@ -365,6 +368,283 @@ test('multimodal binary reference requires MIME type', async () => {
 		},
 	);
 	assert.equal(calls.length, 0);
+});
+
+test('multimodal binary image rejects unsupported MIME before HTTP request', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'Use the references as style guidance',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'binary',
+					binaryProperty: 'imageRef',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+	}, {
+		imageRef: {
+			mimeType: 'application/pdf',
+			data: 'not-an-image',
+		},
+	});
+
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String((error as { message?: unknown }).message ?? error);
+			assert.match(message, /参考图片 MIME 类型必须是 jpeg、png、webp、bmp、tiff、gif、heic 或 heif/);
+			return true;
+		},
+	);
+	assert.equal(calls.length, 0);
+});
+
+test('multimodal binary image rejects over-limit file before HTTP request', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'Use the references as style guidance',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'binary',
+					binaryProperty: 'imageRef',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+	}, {
+		imageRef: {
+			mimeType: 'image/png',
+			buffer: Buffer.alloc(31 * 1024 * 1024),
+		},
+	});
+
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String((error as { message?: unknown }).message ?? error);
+			assert.match(message, /参考图片单张不能超过 30MB/);
+			return true;
+		},
+	);
+	assert.equal(calls.length, 0);
+});
+
+test('multimodal binary audio rejects unsupported MIME and over-limit file before HTTP request', async () => {
+	for (const [binary, expectedMessage] of [
+		[
+			{ mimeType: 'audio/ogg', data: 'not-wav-or-mp3' },
+			/参考音频 MIME 类型必须是 wav 或 mp3/,
+		],
+		[
+			{ mimeType: 'audio/wav', buffer: Buffer.alloc(16 * 1024 * 1024) },
+			/参考音频单段不能超过 15MB/,
+		],
+	] as const) {
+		const { calls, context } = createVideoExecutionContext({
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Use the references as style guidance',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						materialUrl: 'https://cdn.example.com/reference',
+					},
+					{
+						materialType: 'audio',
+						materialSource: 'binary',
+						binaryProperty: 'audioRef',
+					},
+				],
+			},
+			resolution: '720p',
+			ratio: 'adaptive',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
+		}, {
+			audioRef: binary,
+		});
+
+		await assert.rejects(
+			() => Seedance.prototype.execute.call(context),
+			(error: unknown) => {
+				const message = String((error as { message?: unknown }).message ?? error);
+				assert.match(message, expectedMessage);
+				return true;
+			},
+		);
+		assert.equal(calls.length, 0);
+	}
+});
+
+test('multimodal locally computable request-size overflow fails before HTTP request', async () => {
+	const twentyFiveMb = Buffer.alloc(25 * 1024 * 1024);
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'Use the references as style guidance',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'binary',
+					binaryProperty: 'imageA',
+				},
+				{
+					materialType: 'image',
+					materialSource: 'binary',
+					binaryProperty: 'imageB',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+	}, {
+		imageA: {
+			mimeType: 'image/png',
+			buffer: twentyFiveMb,
+		},
+		imageB: {
+			mimeType: 'image/png',
+			buffer: twentyFiveMb,
+		},
+	});
+
+	await assert.rejects(
+		() => Seedance.prototype.execute.call(context),
+		(error: unknown) => {
+			const message = String((error as { message?: unknown }).message ?? error);
+			assert.match(message, /请求体可计算部分不能超过 64MB/);
+			return true;
+		},
+	);
+	assert.equal(calls.length, 0);
+});
+
+test('extensionless signed URL and asset references reach create body without probing', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: 'Use remote references exactly as provided',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'image',
+					materialSource: 'url',
+					materialUrl: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc',
+				},
+				{
+					materialType: 'audio',
+					materialSource: 'url',
+					materialUrl: 'https://cdn.example.com/audio-stream?id=123',
+				},
+				{
+					materialType: 'video',
+					videoMaterialSource: 'asset',
+					videoAssetId: 'remote_video_asset',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 5,
+		generateAudio: false,
+		advancedOptions: {},
+	});
+
+	await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assert.deepEqual(body.content, [
+		{ type: 'text', text: 'Use remote references exactly as provided' },
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: { url: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc' },
+		},
+		{
+			type: 'audio_url',
+			role: 'reference_audio',
+			audio_url: { url: 'https://cdn.example.com/audio-stream?id=123' },
+		},
+		{
+			type: 'video_url',
+			role: 'reference_video',
+			video_url: { url: 'asset://remote_video_asset' },
+		},
+	]);
+});
+
+test('execute-level create body uses official fields and excludes deferred options', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 't2v',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: '一只小猫对着镜头打哈欠',
+		resolution: '1080p',
+		ratio: '16:9',
+		duration: 5,
+		generateAudio: true,
+		advancedOptions: {
+			seed: 11,
+			watermark: true,
+			returnLastFrame: true,
+			executionExpiresAfter: 7200,
+		},
+	});
+
+	await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+	const bodyJson = JSON.stringify(body);
+
+	assert.equal(body.resolution, '1080p');
+	assert.equal(body.ratio, '16:9');
+	assert.equal(body.duration, 5);
+	assert.equal(body.seed, 11);
+	assert.equal(body.watermark, true);
+	assert.equal(body.execution_expires_after, 7200);
+	assert.equal(body.return_last_frame, true);
+	assert.equal(body.generate_audio, true);
+	assert.deepEqual(body.content, [{ type: 'text', text: '一只小猫对着镜头打哈欠' }]);
+	assert.equal(bodyJson.includes('--resolution'), false);
+	assert.equal(bodyJson.includes('--ratio'), false);
+	assert.equal(bodyJson.includes('--duration'), false);
+	assert.equal(bodyJson.includes('--seed'), false);
+	assert.equal(bodyJson.includes('camera_fixed'), false);
+	assert.equal(bodyJson.includes('web_search'), false);
+	assert.equal(bodyJson.includes('safety_identifier'), false);
+	assert.equal(bodyJson.includes('"tools"'), false);
 });
 
 test('video polling and endpoint contracts stay stable', () => {

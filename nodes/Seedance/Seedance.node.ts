@@ -13,6 +13,10 @@ import { getFriendlyDeleteError, normalizeSeedanceError } from './shared/mappers
 import { pollTaskUntilSettled } from './shared/polling/getTaskPolling';
 import { getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
+import {
+	SEEDANCE_VIDEO_IMAGE_MAX_BYTES,
+	SEEDANCE_VIDEO_IMAGE_MIME_TYPES,
+} from './shared/constants';
 import type {
 	SeedanceCreateInput,
 	SeedanceReferenceMaterialInput,
@@ -119,22 +123,24 @@ export class Seedance implements INodeType {
 			
 			const itemBinary = items[itemIndex].binary?.[binaryProp];
 			const mimeType = itemBinary?.mimeType ?? '';
-			const supportedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'];
 			
-			if (!supportedMimeTypes.includes(mimeType)) {
-				throw new NodeOperationError(this.getNode(), '不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff 或 gif。', { itemIndex });
+			if (!(SEEDANCE_VIDEO_IMAGE_MIME_TYPES as readonly string[]).includes(mimeType)) {
+				throw new NodeOperationError(this.getNode(), '不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff, gif, heic 或 heif。', { itemIndex });
 			}
 
 			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+			const base64Data = binaryData.toString('base64');
 			
-			if (binaryData.length > 30 * 1024 * 1024) {
+			if (binaryData.length > SEEDANCE_VIDEO_IMAGE_MAX_BYTES) {
 				throw new NodeOperationError(this.getNode(), '图片大小超出 30MB 限制。', { itemIndex });
 			}
 
 			return {
 				type: 'binary' as const,
-				data: binaryData.toString('base64'),
+				data: base64Data,
 				mimeType,
+				byteLength: binaryData.length,
+				encodedByteLength: `data:${mimeType};base64,${base64Data}`.length,
 			};
 		};
 
@@ -158,7 +164,7 @@ export class Seedance implements INodeType {
 			itemIndex: number,
 			binaryProp: string,
 			referenceIndex: number,
-		): Promise<string> => {
+		): Promise<Pick<SeedanceReferenceMaterialInput, 'value' | 'mimeType' | 'byteLength' | 'encodedByteLength'>> => {
 			this.helpers.assertBinaryData(itemIndex, binaryProp);
 			const itemBinary = items[itemIndex].binary?.[binaryProp];
 			const mimeType = itemBinary?.mimeType ?? '';
@@ -172,8 +178,15 @@ export class Seedance implements INodeType {
 			}
 
 			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
+			const base64Data = binaryData.toString('base64');
+			const value = `data:${mimeType};base64,${base64Data}`;
 
-			return `data:${mimeType};base64,${binaryData.toString('base64')}`;
+			return {
+				value,
+				mimeType,
+				byteLength: binaryData.length,
+				encodedByteLength: value.length,
+			};
 		};
 
 		const collectSeedanceReferenceMaterials = async (
@@ -218,15 +231,19 @@ export class Seedance implements INodeType {
 					);
 				}
 
-				const value = materialSource === 'binary' && materialType !== 'video'
-					? await processSeedanceBinaryReference(itemIndex, trimmedValue, referenceIndex + 1)
-					: trimmedValue;
-
-				referenceMaterials.push({
-					materialType,
-					materialSource,
-					value,
-				});
+				if (materialSource === 'binary' && materialType !== 'video') {
+					referenceMaterials.push({
+						materialType,
+						materialSource,
+						...(await processSeedanceBinaryReference(itemIndex, trimmedValue, referenceIndex + 1)),
+					});
+				} else {
+					referenceMaterials.push({
+						materialType,
+						materialSource,
+						value: trimmedValue,
+					});
+				}
 			}
 
 			return referenceMaterials;
