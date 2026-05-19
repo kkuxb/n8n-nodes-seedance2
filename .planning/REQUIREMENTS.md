@@ -63,7 +63,7 @@ Primary official source for this milestone:
 ### Compatibility
 
 - [x] **COMP-01**: Existing create/get/list/delete task lifecycle behavior remains compatible with shipped v1.2 workflows.
-- [ ] **COMP-02**: Existing wait and video-download behavior remains compatible with multimodal tasks and shipped non-multimodal tasks.
+- [x] **COMP-02**: Existing wait and video-download behavior remains compatible with multimodal tasks and shipped non-multimodal tasks.
 - [ ] **COMP-03**: Existing Seedream image-generation paths remain unaffected by the new video multimodal reference helpers.
 - [x] **COMP-04**: Regression tests cover old video modes, new multimodal payload shaping, validation errors, n8n binary conversion for supported media, and execute-level HTTP body capture.
 
@@ -129,7 +129,7 @@ Which phases cover which requirements.
 | UI-03 | Phase 14 | Complete |
 | UI-04 | Phase 14 | Complete |
 | COMP-01 | Phase 17 | Complete |
-| COMP-02 | Phase 17 | Pending |
+| COMP-02 | Phase 17 | Complete |
 | COMP-03 | Phase 17 | Pending |
 | COMP-04 | Phase 17 | Complete |
 | DOC-01 | Phase 18 | Pending |
