@@ -67,16 +67,13 @@ Primary official source for this milestone:
 - [x] **COMP-03**: Existing Seedream image-generation paths remain unaffected by the new video multimodal reference helpers.
 - [x] **COMP-04**: Regression tests cover old video modes, new multimodal payload shaping, validation errors, n8n binary conversion for supported media, and execute-level HTTP body capture.
 
-### Documentation
-
-- [ ] **DOC-01**: README or user-facing docs describe how to configure multimodal reference images, videos, audio, and asset IDs in n8n.
-- [ ] **DOC-02**: Docs list the official v1.3 limitations: multimodal/reference-frame mutual exclusion, audio cannot be used alone, video binary direct upload is not supported, and real-person direct face upload is restricted.
-- [ ] **DOC-03**: Manual UAT verifies at least one multimodal create flow and the follow-up get/wait/download lifecycle against the documented behavior.
-
 ## Future Requirements
 
 ### Later Milestones
 
+- **FUT-05**: User-facing docs describe how to configure multimodal reference images, videos, audio, and asset IDs in n8n.
+- **FUT-06**: User-facing docs list the official v1.3 limitations: multimodal/reference-frame mutual exclusion, audio cannot be used alone, video binary direct upload is not supported, and real-person direct face upload is restricted.
+- **FUT-07**: Manual UAT verifies at least one multimodal create flow and the follow-up get/wait/download lifecycle against the documented behavior.
 - **FUT-01**: User can manage or enroll Volcengine real-person/virtual-person assets directly from n8n.
 - **FUT-02**: User can submit video binary directly if Volcengine later documents a supported video Base64/data URL path.
 - **FUT-03**: User can use Seedance 1.5 pro Draft/sample-task flows.
@@ -132,15 +129,11 @@ Which phases cover which requirements.
 | COMP-02 | Phase 17 | Complete |
 | COMP-03 | Phase 17 | Complete |
 | COMP-04 | Phase 17 | Complete |
-| DOC-01 | Phase 18 | Pending |
-| DOC-02 | Phase 18 | Pending |
-| DOC-03 | Phase 18 | Pending |
-
 **Coverage:**
-- v1.3 requirements: 34 total
-- Mapped to phases: 34
+- v1.3 requirements: 31 total
+- Mapped to phases: 31
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-18*
-*Last updated: 2026-05-18 after v1.3 roadmap creation*
+*Last updated: 2026-05-19 after cancelling Phase 18 documentation/UAT scope*
