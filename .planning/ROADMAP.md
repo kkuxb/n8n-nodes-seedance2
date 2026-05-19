@@ -52,7 +52,10 @@ v1.3 将现有/目标的“参考视频生视频”能力升级为官方 Seedanc
   3. 用户可以提交 0-3 段参考音频，每段音频作为 `audio_url` 且 role 为 `reference_audio`，并且音频不能单独成单。
   4. 用户可以组合官方支持的 prompt、图片、视频、音频输入；裸素材 ID 在适用时会归一化为 `asset://<ASSET_ID>`。
   5. 创建结果摘要展示模型、模式、prompt 是否存在、参考数量、类型、role、来源种类和选项值，但不暴露原始媒体 payload。
-**Plans**: TBD
+**Plans**:
+- Wave 1: `17-01-PLAN.md` - Lock old video create payload compatibility.
+- Wave 2 *(blocked on Wave 1 completion)*: `17-02-PLAN.md` - Lock task lifecycle, wait, and download compatibility.
+- Wave 3 *(blocked on Wave 2 completion)*: `17-03-PLAN.md` - Lock Seedream image isolation and full regression.
 
 ### Phase 16: Seedance 2.0 参数与本地校验
 **Goal**: 用户在本地就能得到符合官方 Seedance 2.0 文档的媒体限制、模型选项和生成参数反馈，避免提交明显无效的请求。
@@ -140,5 +143,5 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18
 | 14. 多模态入口与参考素材表单 | v1.3 | 2/2 | Complete | 2026-05-19 |
 | 15. 参考媒体来源与官方 payload | v1.3 | 2/2 | Complete    | 2026-05-19 |
 | 16. Seedance 2.0 参数与本地校验 | v1.3 | 2/2 | Complete    | 2026-05-19 |
-| 17. 既有模式与 lifecycle 兼容性 | v1.3 | 0/TBD | Not started | - |
+| 17. 既有模式与 lifecycle 兼容性 | v1.3 | 0/3 | Planned    | - |
 | 18. 用户文档与手工验收 | v1.3 | 0/TBD | Not started | - |
