@@ -28,6 +28,30 @@ export const SEEDREAM_IMAGE_MODEL = 'doubao-seedream-5-0-260128';
 
 export const SEEDREAM_IMAGE_RESPONSE_FORMAT = 'b64_json';
 
+export const SEEDANCE_VIDEO_IMAGE_MAX_BYTES = 30 * 1024 * 1024;
+
+export const SEEDANCE_VIDEO_AUDIO_MAX_BYTES = 15 * 1024 * 1024;
+
+export const SEEDANCE_VIDEO_LOCAL_REQUEST_MAX_BYTES = 64 * 1024 * 1024;
+
+export const SEEDANCE_VIDEO_IMAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/bmp',
+  'image/tiff',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+] as const;
+
+export const SEEDANCE_VIDEO_AUDIO_MIME_TYPES = [
+  'audio/wav',
+  'audio/x-wav',
+  'audio/mpeg',
+  'audio/mp3',
+] as const;
+
 export const SEEDREAM_REFERENCE_IMAGE_MAX_COUNT = 14;
 
 export const SEEDREAM_REFERENCE_IMAGE_MAX_BYTES = 10 * 1024 * 1024;

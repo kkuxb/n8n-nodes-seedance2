@@ -285,9 +285,32 @@ export const createOperationProperties: INodeProperties[] = [
 		options: [
 			{ name: '480p', value: '480p' },
 			{ name: '720p', value: '720p' },
+			{ name: '1080p', value: '1080p' },
 		],
-		description: '生成视频分辨率。Seedance 2.0 系列仅支持 480p 和 720p',
-		displayOptions: createDisplayOptions,
+		description: '生成视频分辨率。Seedance 2.0 支持 480p、720p 和 1080p',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: ['doubao-seedance-2-0-260128'],
+			},
+		},
+	},
+	{
+		displayName: '分辨率',
+		name: 'resolution',
+		type: 'options',
+		default: '720p',
+		options: [
+			{ name: '480p', value: '480p' },
+			{ name: '720p', value: '720p' },
+		],
+		description: '生成视频分辨率。Seedance 2.0 Fast 支持 480p 和 720p',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: ['doubao-seedance-2-0-fast-260128'],
+			},
+		},
 	},
 	{
 		displayName: '宽高比',

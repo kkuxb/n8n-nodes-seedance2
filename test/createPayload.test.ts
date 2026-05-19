@@ -4,9 +4,17 @@ import assert from 'node:assert/strict';
 
 const createOperationModule = await import('../dist/nodes/Seedance/description/create.operation.js');
 const createPayloadModule = await import('../dist/nodes/Seedance/shared/mappers/createPayload.js');
+const constantsModule = await import('../dist/nodes/Seedance/shared/constants.js');
 
 const { createOperationProperties } = createOperationModule;
 const { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } = createPayloadModule;
+const {
+	SEEDANCE_VIDEO_AUDIO_MAX_BYTES,
+	SEEDANCE_VIDEO_AUDIO_MIME_TYPES,
+	SEEDANCE_VIDEO_IMAGE_MAX_BYTES,
+	SEEDANCE_VIDEO_IMAGE_MIME_TYPES,
+	SEEDANCE_VIDEO_LOCAL_REQUEST_MAX_BYTES,
+} = constantsModule;
 
 function getCreateModeProperty() {
 	const createModeProperty = createOperationProperties.find(
@@ -61,6 +69,24 @@ test('常用选项被直接暴露在根层，不再收进 collection', () => {
 	assert.ok(props.includes('duration'));
 	assert.ok(props.includes('generateAudio'));
 	assert.equal(props.includes('commonOptions'), false);
+});
+
+test('Seedance 2.0 官方本地媒体限制常量可用于视频校验', () => {
+	assert.deepEqual(SEEDANCE_VIDEO_IMAGE_MIME_TYPES, [
+		'image/jpeg',
+		'image/png',
+		'image/webp',
+		'image/bmp',
+		'image/tiff',
+		'image/gif',
+		'image/heic',
+		'image/heif',
+	]);
+	assert.ok(SEEDANCE_VIDEO_AUDIO_MIME_TYPES.includes('audio/wav'));
+	assert.ok(SEEDANCE_VIDEO_AUDIO_MIME_TYPES.includes('audio/mpeg'));
+	assert.equal(SEEDANCE_VIDEO_IMAGE_MAX_BYTES, 30 * 1024 * 1024);
+	assert.equal(SEEDANCE_VIDEO_AUDIO_MAX_BYTES, 15 * 1024 * 1024);
+	assert.equal(SEEDANCE_VIDEO_LOCAL_REQUEST_MAX_BYTES, 64 * 1024 * 1024);
 });
 
 test('创建模式追加多模态参考生视频且默认仍为文生视频', () => {
@@ -192,6 +218,29 @@ test('高级选项只包含 4 个进阶参数', () => {
 	);
 });
 
+test('Seedance 2.0 与 Fast 使用互斥分辨率选项', () => {
+	const resolutionProperties = createOperationProperties.filter(
+		(property) => property.name === 'resolution',
+	);
+	const standardResolutionProperty = resolutionProperties.find((property) =>
+		property.displayOptions.show.model?.includes('doubao-seedance-2-0-260128'),
+	);
+	const fastResolutionProperty = resolutionProperties.find((property) =>
+		property.displayOptions.show.model?.includes('doubao-seedance-2-0-fast-260128'),
+	);
+
+	assert.ok(standardResolutionProperty);
+	assert.ok(fastResolutionProperty);
+	assert.deepEqual(
+		standardResolutionProperty.options.map((option: { value: string }) => option.value),
+		['480p', '720p', '1080p'],
+	);
+	assert.deepEqual(
+		fastResolutionProperty.options.map((option: { value: string }) => option.value),
+		['480p', '720p'],
+	);
+});
+
 test('视频高级选项中的水印默认值为 false', () => {
 	const advancedOptionsProperty = createOperationProperties.find(
 		(property) => property.name === 'advancedOptions',
@@ -234,10 +283,24 @@ test('文生 create payload 自动构造 text content 项', () => {
 
 	assert.equal(payload.model, 'doubao-seedance-2-0-260128');
 	assert.deepEqual(payload.content, [{ type: 'text', text: '一只小猫对着镜头打哈欠' }]);
+	assert.equal(payload.resolution, '720p');
 	assert.equal(payload.duration, 5);
 	assert.equal(payload.ratio, 'adaptive');
+	assert.equal(payload.seed, 11);
+	assert.equal(payload.watermark, true);
+	assert.equal(payload.execution_expires_after, 7200);
 	assert.equal(payload.return_last_frame, true);
 	assert.equal(payload.generate_audio, true);
+	assert.equal((payload.content[0] as { text: string }).text, '一只小猫对着镜头打哈欠');
+	assert.equal(JSON.stringify(payload).includes('--resolution'), false);
+	assert.equal(JSON.stringify(payload).includes('--ratio'), false);
+	assert.equal(JSON.stringify(payload).includes('--duration'), false);
+	assert.equal(JSON.stringify(payload).includes('--seed'), false);
+	assert.equal(JSON.stringify(payload).includes('--watermark'), false);
+	assert.equal('camera_fixed' in payload, false);
+	assert.equal('tools' in payload, false);
+	assert.equal('web_search' in payload, false);
+	assert.equal('safety_identifier' in payload, false);
 	assert.equal('service_tier' in payload, false);
 	assert.equal('frames' in payload, false);
 });
@@ -295,6 +358,8 @@ test('多模态参考生视频按提示词优先和用户素材顺序构造官�
 				materialType: 'audio',
 				materialSource: 'binary',
 				value: 'data:audio/wav;base64,audio_base64',
+				mimeType: 'audio/wav',
+				byteLength: 1024,
 			},
 			{
 				materialType: 'video',
@@ -383,6 +448,9 @@ test('多模态 request summary 保留聚合字段并新增逐项安全摘要', 
 				materialType: 'audio',
 				materialSource: 'binary',
 				value: 'voice',
+				mimeType: 'audio/wav',
+				byteLength: 1024,
+				encodedByteLength: 2048,
 			},
 			{
 				materialType: 'video',
@@ -406,6 +474,9 @@ test('多模态 request summary 保留聚合字段并新增逐项安全摘要', 
 	assert.equal(JSON.stringify(summary).includes('voice'), false);
 	assert.equal(JSON.stringify(summary).includes('private-video-asset'), false);
 	assert.equal(JSON.stringify(summary).includes('asset://'), false);
+	assert.equal(JSON.stringify(summary).includes('audio/wav'), false);
+	assert.equal(JSON.stringify(summary).includes('byteLength'), false);
+	assert.equal(JSON.stringify(summary).includes('encodedByteLength'), false);
 });
 
 test('视频参考素材不接受 Binary 文件来源', () => {
@@ -529,17 +600,197 @@ test('多模态参考生视频执行 Phase 15 数量上限', () => {
 	);
 });
 
-test('不支持的 1080p 分辨率会抛出明确错误', () => {
+test('标准 Seedance 2.0 支持 1080p 且 Fast 防御性拒绝 1080p', () => {
+	assert.equal(
+		buildCreatePayload({
+			createMode: 't2v',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: '城市夜景',
+			resolution: '1080p',
+		}).resolution,
+		'1080p',
+	);
+
 	assert.throws(
 		() =>
 			buildCreatePayload({
 				createMode: 't2v',
-				model: 'doubao-seedance-2-0-260128',
+				model: 'doubao-seedance-2-0-fast-260128',
 				prompt: '城市夜景',
 				resolution: '1080p',
 			}),
-		/480p 和 720p/,
+		/Fast 不支持 1080p/,
 	);
+
+	for (const model of ['doubao-seedance-2-0-260128', 'doubao-seedance-2-0-fast-260128']) {
+		for (const resolution of ['480p', '720p']) {
+			assert.equal(
+				buildCreatePayload({
+					createMode: 't2v',
+					model,
+					prompt: '城市夜景',
+					resolution,
+				}).resolution,
+				resolution,
+			);
+		}
+	}
+});
+
+test('多模态 binary 图片和音频按本地 MIME 与大小快速失败', () => {
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						value: 'data:application/pdf;base64,abc',
+						mimeType: 'application/pdf',
+						byteLength: 32 * 1024 * 1024,
+					},
+				],
+			}),
+		/MIME 类型必须是 jpeg、png、webp、bmp、tiff、gif、heic 或 heif/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						value: 'data:image/png;base64,abc',
+						mimeType: 'image/png',
+						byteLength: 31 * 1024 * 1024,
+					},
+				],
+			}),
+		/参考图片单张不能超过 30MB/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: 'https://cdn.example.com/render',
+					},
+					{
+						materialType: 'audio',
+						materialSource: 'binary',
+						value: 'data:audio/ogg;base64,abc',
+						mimeType: 'audio/ogg',
+						byteLength: 1024,
+					},
+				],
+			}),
+		/参考音频 MIME 类型必须是 wav 或 mp3/,
+	);
+
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: 'https://cdn.example.com/render',
+					},
+					{
+						materialType: 'audio',
+						materialSource: 'binary',
+						value: 'data:audio/wav;base64,abc',
+						mimeType: 'audio/wav',
+						byteLength: 16 * 1024 * 1024,
+					},
+				],
+			}),
+		/参考音频单段不能超过 15MB/,
+	);
+});
+
+test('多模态本地请求体大小只统计可计算的 binary/data URL 部分', () => {
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						value: 'data:image/png;base64,abc',
+						mimeType: 'image/png',
+						byteLength: 1024,
+						encodedByteLength: 65 * 1024 * 1024,
+					},
+				],
+			}),
+		/请求体可计算部分不能超过 64MB/,
+	);
+});
+
+test('多模态 URL 和素材 ID 不按扩展名或远端元数据探测', () => {
+	const payload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		referenceMaterials: [
+			{
+				materialType: 'image',
+				materialSource: 'url',
+				value: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc',
+			},
+			{
+				materialType: 'audio',
+				materialSource: 'url',
+				value: 'https://cdn.example.com/audio-stream?id=123',
+			},
+			{
+				materialType: 'video',
+				materialSource: 'asset',
+				value: 'video_asset_without_extension',
+			},
+		],
+	});
+
+	assert.deepEqual(payload.content, [
+		{
+			type: 'image_url',
+			role: 'reference_image',
+			image_url: { url: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc' },
+		},
+		{
+			type: 'audio_url',
+			role: 'reference_audio',
+			audio_url: { url: 'https://cdn.example.com/audio-stream?id=123' },
+		},
+		{
+			type: 'video_url',
+			role: 'reference_video',
+			video_url: { url: 'asset://video_asset_without_extension' },
+		},
+	]);
+});
+
+test('创建 UI 不暴露 Phase 16 明确排除的参数', () => {
+	const descriptionJson = JSON.stringify(createOperationProperties);
+
+	assert.equal(descriptionJson.includes('camera_fixed'), false);
+	assert.equal(descriptionJson.includes('web_search'), false);
+	assert.equal(descriptionJson.includes('safety_identifier'), false);
+	assert.equal(descriptionJson.includes('"tools"'), false);
 });
 
 test('不支持的模型会抛出明确错误', () => {

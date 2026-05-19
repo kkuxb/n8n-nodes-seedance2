@@ -1,9 +1,19 @@
 import type { IDataObject } from 'n8n-workflow';
 
+import {
+	SEEDANCE_VIDEO_AUDIO_MAX_BYTES,
+	SEEDANCE_VIDEO_AUDIO_MIME_TYPES,
+	SEEDANCE_VIDEO_IMAGE_MAX_BYTES,
+	SEEDANCE_VIDEO_IMAGE_MIME_TYPES,
+	SEEDANCE_VIDEO_LOCAL_REQUEST_MAX_BYTES,
+} from '../constants';
+
 export interface SeedanceImageInput {
 	type: 'url' | 'binary';
 	data: string;
 	mimeType?: string;
+	byteLength?: number;
+	encodedByteLength?: number;
 }
 
 export type SeedanceCreateMode = 't2v' | 'i2v_first' | 'i2v_first_last' | 'multimodal_reference';
@@ -16,6 +26,9 @@ export interface SeedanceReferenceMaterialInput {
 	materialType: SeedanceReferenceMaterialType;
 	materialSource: SeedanceReferenceMaterialSource;
 	value: string;
+	mimeType?: string;
+	byteLength?: number;
+	encodedByteLength?: number;
 }
 
 export interface SeedanceCreateInput extends IDataObject {
@@ -40,9 +53,69 @@ const SUPPORTED_MODELS = [
 	'doubao-seedance-2-0-fast-260128',
 ];
 
-const SUPPORTED_RESOLUTIONS = ['480p', '720p'];
+const FAST_SEEDANCE_2_MODEL = 'doubao-seedance-2-0-fast-260128';
+
+const SUPPORTED_RESOLUTIONS = ['480p', '720p', '1080p'];
+
+const FAST_MODEL_RESOLUTIONS = ['480p', '720p'];
 
 const SUPPORTED_RATIOS = ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9', 'adaptive'];
+
+function includesValue<T extends readonly string[]>(values: T, value: unknown): value is T[number] {
+	return typeof value === 'string' && values.includes(value);
+}
+
+function formatBytesAsMb(bytes: number): number {
+	return bytes / 1024 / 1024;
+}
+
+function getLocalRequestContribution(referenceMaterial: SeedanceReferenceMaterialInput): number {
+	if (referenceMaterial.materialSource !== 'binary') {
+		return 0;
+	}
+
+	if (typeof referenceMaterial.encodedByteLength === 'number') {
+		return referenceMaterial.encodedByteLength;
+	}
+
+	if (referenceMaterial.value.startsWith('data:')) {
+		return referenceMaterial.value.length;
+	}
+
+	return 0;
+}
+
+function validateBinaryReferenceMaterial(referenceMaterial: SeedanceReferenceMaterialInput): void {
+	if (referenceMaterial.materialSource !== 'binary') {
+		return;
+	}
+
+	if (referenceMaterial.materialType === 'image') {
+		if (!includesValue(SEEDANCE_VIDEO_IMAGE_MIME_TYPES, referenceMaterial.mimeType)) {
+			throw new Error(
+				'多模态 binary 参考图片 MIME 类型必须是 jpeg、png、webp、bmp、tiff、gif、heic 或 heif。',
+			);
+		}
+
+		if (
+			typeof referenceMaterial.byteLength === 'number' &&
+			referenceMaterial.byteLength > SEEDANCE_VIDEO_IMAGE_MAX_BYTES
+		) {
+			throw new Error('多模态 binary 参考图片单张不能超过 30MB。');
+		}
+	} else if (referenceMaterial.materialType === 'audio') {
+		if (!includesValue(SEEDANCE_VIDEO_AUDIO_MIME_TYPES, referenceMaterial.mimeType)) {
+			throw new Error('多模态 binary 参考音频 MIME 类型必须是 wav 或 mp3。');
+		}
+
+		if (
+			typeof referenceMaterial.byteLength === 'number' &&
+			referenceMaterial.byteLength > SEEDANCE_VIDEO_AUDIO_MAX_BYTES
+		) {
+			throw new Error('多模态 binary 参考音频单段不能超过 15MB。');
+		}
+	}
+}
 
 export function validateCreateInput(input: SeedanceCreateInput): void {
 	const hasDuration = typeof input.duration === 'number' && Number.isFinite(input.duration);
@@ -105,11 +178,32 @@ export function validateCreateInput(input: SeedanceCreateInput): void {
 			) {
 				throw new Error('视频参考素材不支持 Binary 文件来源，请使用 URL链接或火山方舟素材库。');
 			}
+
+			validateBinaryReferenceMaterial(referenceMaterial);
+		}
+
+		const localRequestBytes = referenceMaterials.reduce(
+			(total, referenceMaterial) => total + getLocalRequestContribution(referenceMaterial),
+			0,
+		);
+
+		if (localRequestBytes > SEEDANCE_VIDEO_LOCAL_REQUEST_MAX_BYTES) {
+			throw new Error(
+				`多模态本地 binary/data URL 请求体可计算部分不能超过 64MB，当前约 ${formatBytesAsMb(localRequestBytes).toFixed(1)}MB。`,
+			);
 		}
 	}
 
 	if (typeof input.resolution === 'string' && !SUPPORTED_RESOLUTIONS.includes(input.resolution)) {
-		throw new Error('当前模型仅支持 480p 和 720p 分辨率。');
+		throw new Error('当前模型仅支持 480p、720p 和 1080p 分辨率。');
+	}
+
+	if (
+		input.model === FAST_SEEDANCE_2_MODEL &&
+		typeof input.resolution === 'string' &&
+		!FAST_MODEL_RESOLUTIONS.includes(input.resolution)
+	) {
+		throw new Error('Seedance 2.0 Fast 不支持 1080p 分辨率，请选择 480p 或 720p。');
 	}
 
 	if (typeof input.ratio === 'string' && !SUPPORTED_RATIOS.includes(input.ratio)) {
