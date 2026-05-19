@@ -22,7 +22,7 @@ v1.3 将现有/目标的“参考视频生视频”能力升级为官方 Seedanc
 - [x] **Phase 14: 多模态入口与参考素材表单** - 用户能在现有 Seedance create 操作中选择并配置官方多模态参考生视频模式。 (completed 2026-05-19)
 - [x] **Phase 15: 参考媒体来源与官方 payload** - 用户的图片、视频、音频和素材 ID 被归一化为官方 Seedance 2.0 content 结构。 (completed 2026-05-19)
 - [x] **Phase 16: Seedance 2.0 参数与本地校验** - 用户在提交前获得符合官方约束的媒体、模型和生成参数校验。 (completed 2026-05-19)
-- [ ] **Phase 17: 既有模式与 lifecycle 兼容性** - 已 shipped 的视频 lifecycle 与 Seedream 图片路径在新增多模态能力后保持兼容。
+- [x] **Phase 17: 既有模式与 lifecycle 兼容性** - 已 shipped 的视频 lifecycle 与 Seedream 图片路径在新增多模态能力后保持兼容。 (completed 2026-05-19)
 - [ ] **Phase 18: 用户文档与手工验收** - 用户能按文档完成一次多模态 create 到 get/wait/download 的完整验证。
 
 ## Phase Details
@@ -143,5 +143,5 @@ Phases execute in numeric order: 14 -> 15 -> 16 -> 17 -> 18
 | 14. 多模态入口与参考素材表单 | v1.3 | 2/2 | Complete | 2026-05-19 |
 | 15. 参考媒体来源与官方 payload | v1.3 | 2/2 | Complete    | 2026-05-19 |
 | 16. Seedance 2.0 参数与本地校验 | v1.3 | 2/2 | Complete    | 2026-05-19 |
-| 17. 既有模式与 lifecycle 兼容性 | v1.3 | 2/3 | In Progress|  |
+| 17. 既有模式与 lifecycle 兼容性 | v1.3 | 3/3 | Complete   | 2026-05-19 |
 | 18. 用户文档与手工验收 | v1.3 | 0/TBD | Not started | - |
