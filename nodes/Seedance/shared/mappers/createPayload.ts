@@ -4,8 +4,12 @@ import type { SeedanceCreateInput } from '../validators/create';
 import { validateCreateInput } from '../validators/create';
 
 export interface SeedanceCreateRequestSummary extends IDataObject {
+	createMode: string;
 	model: string;
 	prompt?: string;
+	referenceCount?: number;
+	referenceTypes?: string[];
+	referenceSources?: string[];
 	resolution?: string;
 	ratio?: string;
 	duration?: number;
@@ -83,8 +87,20 @@ export function buildCreateRequestSummary(input: SeedanceCreateInput): SeedanceC
 	validateCreateInput(input);
 
 	return {
+		createMode: input.createMode,
 		model: input.model,
 		prompt: input.prompt,
+		...(input.createMode === 'multimodal_reference'
+			? {
+					referenceCount: input.referenceMaterials?.length ?? 0,
+					referenceTypes: Array.from(
+						new Set((input.referenceMaterials ?? []).map((item) => item.materialType)),
+					),
+					referenceSources: Array.from(
+						new Set((input.referenceMaterials ?? []).map((item) => item.materialSource)),
+					),
+				}
+			: {}),
 		...(input.resolution ? { resolution: input.resolution } : {}),
 		...(input.ratio ? { ratio: input.ratio } : {}),
 		...(typeof input.duration === 'number' ? { duration: input.duration } : {}),

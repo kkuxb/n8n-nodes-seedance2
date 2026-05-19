@@ -6,12 +6,25 @@ export interface SeedanceImageInput {
 	mimeType?: string;
 }
 
+export type SeedanceCreateMode = 't2v' | 'i2v_first' | 'i2v_first_last' | 'multimodal_reference';
+
+export type SeedanceReferenceMaterialType = 'image' | 'video' | 'audio';
+
+export type SeedanceReferenceMaterialSource = 'url' | 'binary' | 'asset';
+
+export interface SeedanceReferenceMaterialInput {
+	materialType: SeedanceReferenceMaterialType;
+	materialSource: SeedanceReferenceMaterialSource;
+	value: string;
+}
+
 export interface SeedanceCreateInput extends IDataObject {
-	createMode: 't2v' | 'i2v_first' | 'i2v_first_last';
+	createMode: SeedanceCreateMode;
 	model: string;
 	prompt?: string;
 	firstFrameImage?: SeedanceImageInput;
 	lastFrameImage?: SeedanceImageInput;
+	referenceMaterials?: SeedanceReferenceMaterialInput[];
 	resolution?: string;
 	ratio?: string;
 	duration?: number;
@@ -56,6 +69,17 @@ export function validateCreateInput(input: SeedanceCreateInput): void {
 		}
 		if (!input.lastFrameImage || !input.lastFrameImage.data.trim()) {
 			throw new Error('首尾帧图生视频模式下，必须提供尾帧图片。');
+		}
+	} else if (input.createMode === 'multimodal_reference') {
+		if (Array.isArray(input.referenceMaterials)) {
+			for (const referenceMaterial of input.referenceMaterials) {
+				if (
+					referenceMaterial.materialType === 'video' &&
+					referenceMaterial.materialSource === 'binary'
+				) {
+					throw new Error('视频参考素材不支持 Binary 文件来源，请使用 URL链接或火山方舟素材库。');
+				}
+			}
 		}
 	}
 

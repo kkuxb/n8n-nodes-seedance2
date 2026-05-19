@@ -7,6 +7,9 @@ const createDisplayOptions = {
 	},
 };
 
+const imageFaceReferenceNotice =
+	'Seedance 2.0 当前只接受两类真人脸参考素材：Seedream 5.0 Lite 文生图生成的素材，或火山方舟素材库素材。';
+
 export const createOperationProperties: INodeProperties[] = [
 	{
 		displayName: '模型',
@@ -38,6 +41,11 @@ export const createOperationProperties: INodeProperties[] = [
 			{ name: '文生视频', value: 't2v' },
 			{ name: '首帧图生视频', value: 'i2v_first' },
 			{ name: '首尾帧图生视频', value: 'i2v_first_last' },
+			{
+				name: '多模态参考生视频',
+				value: 'multimodal_reference',
+				description: '使用参考图片、视频、音频和可选提示词生成视频',
+			},
 		],
 		description: '选择视频生成的方式',
 		displayOptions: createDisplayOptions,
@@ -50,7 +58,7 @@ export const createOperationProperties: INodeProperties[] = [
 			rows: 4,
 		},
 		default: '',
-		description: '请输入视频提示词；图生模式下提示词为可选',
+		description: '请输入视频提示词；图生和多模态参考生视频模式下提示词为可选',
 		displayOptions: createDisplayOptions,
 	},
 	{
@@ -81,6 +89,7 @@ export const createOperationProperties: INodeProperties[] = [
 				firstFrameInputMethod: ['url'],
 			},
 		},
+		description: `可公网访问的首帧图片 URL。${imageFaceReferenceNotice}`,
 	},
 	{
 		displayName: '首帧二进制属性名',
@@ -94,6 +103,7 @@ export const createOperationProperties: INodeProperties[] = [
 				firstFrameInputMethod: ['binary'],
 			},
 		},
+		description: `包含首帧图片的输入 binary 属性名，默认 data。${imageFaceReferenceNotice}`,
 	},
 	{
 		displayName: '尾帧图片输入方式',
@@ -123,6 +133,7 @@ export const createOperationProperties: INodeProperties[] = [
 				lastFrameInputMethod: ['url'],
 			},
 		},
+		description: `可公网访问的尾帧图片 URL。${imageFaceReferenceNotice}`,
 	},
 	{
 		displayName: '尾帧二进制属性名',
@@ -136,6 +147,135 @@ export const createOperationProperties: INodeProperties[] = [
 				lastFrameInputMethod: ['binary'],
 			},
 		},
+		description: `包含尾帧图片的输入 binary 属性名，默认 data。${imageFaceReferenceNotice}`,
+	},
+	{
+		displayName: '参考素材',
+		name: 'referenceMaterials',
+		type: 'fixedCollection',
+		default: {},
+		typeOptions: {
+			multipleValues: true,
+		},
+		placeholder: '添加参考素材',
+		description: '添加多模态参考生视频使用的图片、视频或音频素材。',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				createMode: ['multimodal_reference'],
+			},
+		},
+		options: [
+			{
+				displayName: '素材',
+				name: 'items',
+				values: [
+					{
+						displayName: '素材类型',
+						name: 'materialType',
+						type: 'options',
+						default: 'image',
+						options: [
+							{ name: '图片', value: 'image' },
+							{ name: '视频', value: 'video' },
+							{ name: '音频', value: 'audio' },
+						],
+					},
+					{
+						displayName: '素材来源',
+						name: 'materialSource',
+						type: 'options',
+						default: 'url',
+						options: [
+							{ name: 'URL链接', value: 'url' },
+							{ name: 'Binary文件', value: 'binary' },
+							{ name: '火山方舟素材库', value: 'asset' },
+						],
+						displayOptions: {
+							show: {
+								materialType: ['image', 'audio'],
+							},
+						},
+					},
+					{
+						displayName: '素材来源',
+						name: 'videoMaterialSource',
+						type: 'options',
+						default: 'url',
+						options: [
+							{ name: 'URL链接', value: 'url' },
+							{ name: '火山方舟素材库', value: 'asset' },
+						],
+						displayOptions: {
+							show: {
+								materialType: ['video'],
+							},
+						},
+					},
+					{
+						displayName: '素材URL',
+						name: 'materialUrl',
+						type: 'string',
+						default: '',
+						description: `填写可公网访问的素材 URL。图片素材如包含真人脸，${imageFaceReferenceNotice}`,
+						displayOptions: {
+							show: {
+								materialSource: ['url'],
+							},
+						},
+					},
+					{
+						displayName: '素材URL',
+						name: 'videoMaterialUrl',
+						type: 'string',
+						default: '',
+						description: '填写可公网访问的视频素材 URL。',
+						displayOptions: {
+							show: {
+								videoMaterialSource: ['url'],
+							},
+						},
+					},
+					{
+						displayName: '属性名',
+						name: 'binaryProperty',
+						type: 'string',
+						default: 'data',
+						description: `填写 n8n 输入 item 中的 binary 属性名，默认 data；这不是上传控件。图片素材如包含真人脸，${imageFaceReferenceNotice}`,
+						displayOptions: {
+							show: {
+								materialType: ['image', 'audio'],
+								materialSource: ['binary'],
+							},
+						},
+					},
+					{
+						displayName: '素材ID',
+						name: 'assetId',
+						type: 'string',
+						default: '',
+						description: `填写火山方舟素材库的素材 ID，支持裸 ID 或 asset://... URI。图片素材如包含真人脸，${imageFaceReferenceNotice}`,
+						displayOptions: {
+							show: {
+								materialSource: ['asset'],
+							},
+						},
+					},
+					{
+						displayName: '素材ID',
+						name: 'videoAssetId',
+						type: 'string',
+						default: '',
+						description: '填写火山方舟素材库的视频素材 ID，支持裸 ID 或 asset://... URI。',
+						displayOptions: {
+							show: {
+								videoMaterialSource: ['asset'],
+							},
+						},
+					},
+				],
+			},
+		],
 	},
 	{
 		displayName: '分辨率',

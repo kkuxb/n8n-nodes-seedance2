@@ -8,6 +8,24 @@ const createPayloadModule = await import('../dist/nodes/Seedance/shared/mappers/
 const { createOperationProperties } = createOperationModule;
 const { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } = createPayloadModule;
 
+function getCreateModeProperty() {
+	const createModeProperty = createOperationProperties.find(
+		(property) => property.name === 'createMode',
+	);
+
+	assert.ok(createModeProperty);
+	return createModeProperty;
+}
+
+function getReferenceMaterialsProperty() {
+	const referenceMaterialsProperty = createOperationProperties.find(
+		(property) => property.name === 'referenceMaterials',
+	);
+
+	assert.ok(referenceMaterialsProperty);
+	return referenceMaterialsProperty;
+}
+
 test('顶层的默认视频时长为 5 秒', () => {
 	const durationProperty = createOperationProperties.find(
 		(property) => property.name === 'duration',
@@ -43,6 +61,123 @@ test('常用选项被直接暴露在根层，不再收进 collection', () => {
 	assert.ok(props.includes('duration'));
 	assert.ok(props.includes('generateAudio'));
 	assert.equal(props.includes('commonOptions'), false);
+});
+
+test('创建模式追加多模态参考生视频且默认仍为文生视频', () => {
+	const createModeProperty = getCreateModeProperty();
+
+	assert.equal(createModeProperty.default, 't2v');
+	assert.deepEqual(
+		createModeProperty.options.map((option: { name: string; value: string }) => ({
+			name: option.name,
+			value: option.value,
+		})),
+		[
+			{ name: '文生视频', value: 't2v' },
+			{ name: '首帧图生视频', value: 'i2v_first' },
+			{ name: '首尾帧图生视频', value: 'i2v_first_last' },
+			{ name: '多模态参考生视频', value: 'multimodal_reference' },
+		],
+	);
+});
+
+test('多模态参考素材表单使用锁定字段名且不包含标签字段', () => {
+	const referenceMaterialsProperty = getReferenceMaterialsProperty();
+	const itemGroup = referenceMaterialsProperty.options[0];
+	const values = itemGroup.values as Array<{
+		displayName: string;
+		name: string;
+		default?: unknown;
+		options?: Array<{ name: string; value: string }>;
+	}>;
+
+	assert.equal(referenceMaterialsProperty.displayName, '参考素材');
+	assert.equal(referenceMaterialsProperty.type, 'fixedCollection');
+	assert.deepEqual(referenceMaterialsProperty.displayOptions, {
+		show: {
+			generationMode: ['video'],
+			operation: ['create'],
+			createMode: ['multimodal_reference'],
+		},
+	});
+	assert.deepEqual(
+		values.map((value) => value.displayName),
+		['素材类型', '素材来源', '素材来源', '素材URL', '素材URL', '属性名', '素材ID', '素材ID'],
+	);
+	assert.equal(values.some((value) => /标签|备注|名称/.test(value.displayName)), false);
+
+	const materialType = values.find((value) => value.name === 'materialType');
+	assert.ok(materialType);
+	assert.equal(materialType.default, 'image');
+	assert.deepEqual(materialType.options, [
+		{ name: '图片', value: 'image' },
+		{ name: '视频', value: 'video' },
+		{ name: '音频', value: 'audio' },
+	]);
+
+	const materialSource = values.find((value) => value.name === 'materialSource');
+	assert.ok(materialSource);
+	assert.equal(materialSource.default, 'url');
+	assert.deepEqual(materialSource.options, [
+		{ name: 'URL链接', value: 'url' },
+		{ name: 'Binary文件', value: 'binary' },
+		{ name: '火山方舟素材库', value: 'asset' },
+	]);
+
+	const videoMaterialSource = values.find((value) => value.name === 'videoMaterialSource');
+	assert.ok(videoMaterialSource);
+	assert.deepEqual(videoMaterialSource.options, [
+		{ name: 'URL链接', value: 'url' },
+		{ name: '火山方舟素材库', value: 'asset' },
+	]);
+});
+
+test('首尾帧字段不会在多模态参考生视频模式显示', () => {
+	for (const propertyName of [
+		'firstFrameInputMethod',
+		'firstFrameImageUrl',
+		'firstFrameBinaryProperty',
+		'lastFrameInputMethod',
+		'lastFrameImageUrl',
+		'lastFrameBinaryProperty',
+	]) {
+		const property = createOperationProperties.find((item) => item.name === propertyName);
+		assert.ok(property);
+		assert.equal(
+			property.displayOptions.show.createMode.includes('multimodal_reference'),
+			false,
+			`${propertyName} should not show in multimodal mode`,
+		);
+	}
+});
+
+test('真人脸限制提示放在图片相关取值字段描述中', () => {
+	const notice = 'Seedance 2.0 当前只接受两类真人脸参考素材';
+	const referenceMaterialsProperty = getReferenceMaterialsProperty();
+	const values = referenceMaterialsProperty.options[0].values as Array<{
+		name: string;
+		description?: string;
+	}>;
+
+	for (const propertyName of [
+		'firstFrameImageUrl',
+		'firstFrameBinaryProperty',
+		'lastFrameImageUrl',
+		'lastFrameBinaryProperty',
+	]) {
+		const property = createOperationProperties.find((item) => item.name === propertyName);
+		assert.ok(property);
+		assert.match(property.description, new RegExp(notice));
+	}
+
+	for (const fieldName of ['materialUrl', 'binaryProperty', 'assetId']) {
+		const field = values.find((value) => value.name === fieldName);
+		assert.ok(field);
+		assert.match(field.description, new RegExp(notice));
+	}
+
+	assert.doesNotMatch(String(getCreateModeProperty().description), new RegExp(notice));
+	assert.doesNotMatch(String(referenceMaterialsProperty.description), new RegExp(notice));
 });
 
 test('高级选项只包含 4 个进阶参数', () => {
@@ -143,6 +278,87 @@ test('首尾帧图生模式构造首尾两张图片，并支持 Base64', () => {
 		{ type: 'image_url', role: 'first_frame', image_url: { url: 'data:image/png;base64,base64_first' } },
 		{ type: 'image_url', role: 'last_frame', image_url: { url: 'data:image/jpeg;base64,base64_last' } },
 	]);
+});
+
+test('多模态参考生视频模式允许空提示词和空参考素材', () => {
+	const payload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: '',
+		referenceMaterials: [],
+	});
+
+	assert.deepEqual(payload.content, []);
+});
+
+test('多模态参考生视频不会提前发送 reference role payload', () => {
+	const payload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		prompt: '参考素材生成视频',
+		referenceMaterials: [
+			{
+				materialType: 'image',
+				materialSource: 'url',
+				value: 'https://example.com/image.png',
+			},
+			{
+				materialType: 'video',
+				materialSource: 'asset',
+				value: 'asset://video_asset',
+			},
+		],
+	});
+
+	assert.deepEqual(payload.content, [{ type: 'text', text: '参考素材生成视频' }]);
+	assert.equal(JSON.stringify(payload).includes('reference_image'), false);
+	assert.equal(JSON.stringify(payload).includes('reference_video'), false);
+	assert.equal(JSON.stringify(payload).includes('first_frame'), false);
+	assert.equal(JSON.stringify(payload).includes('last_frame'), false);
+});
+
+test('多模态 request summary 只暴露素材数量、类型和来源摘要', () => {
+	const summary = buildCreateRequestSummary({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		referenceMaterials: [
+			{
+				materialType: 'image',
+				materialSource: 'url',
+				value: 'https://example.com/private-image.png',
+			},
+			{
+				materialType: 'audio',
+				materialSource: 'binary',
+				value: 'voice',
+			},
+		],
+	});
+
+	assert.equal(summary.createMode, 'multimodal_reference');
+	assert.equal(summary.referenceCount, 2);
+	assert.deepEqual(summary.referenceTypes, ['image', 'audio']);
+	assert.deepEqual(summary.referenceSources, ['url', 'binary']);
+	assert.equal(JSON.stringify(summary).includes('private-image'), false);
+	assert.equal(JSON.stringify(summary).includes('voice'), false);
+});
+
+test('视频参考素材不接受 Binary 文件来源', () => {
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				referenceMaterials: [
+					{
+						materialType: 'video',
+						materialSource: 'binary',
+						value: 'video',
+					},
+				],
+			}),
+		/视频参考素材不支持 Binary 文件来源/,
+	);
 });
 
 test('不支持的 1080p 分辨率会抛出明确错误', () => {

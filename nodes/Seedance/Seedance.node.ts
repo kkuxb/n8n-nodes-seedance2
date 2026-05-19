@@ -13,7 +13,12 @@ import { getFriendlyDeleteError, normalizeSeedanceError } from './shared/mappers
 import { pollTaskUntilSettled } from './shared/polling/getTaskPolling';
 import { getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
-import type { SeedanceCreateInput } from './shared/validators/create';
+import type {
+	SeedanceCreateInput,
+	SeedanceReferenceMaterialInput,
+	SeedanceReferenceMaterialSource,
+	SeedanceReferenceMaterialType,
+} from './shared/validators/create';
 import { validateSeedreamImageInput } from './shared/validators/seedreamImage';
 import type { SeedreamImagePayloadInput, SeedreamImageReferenceInput } from './shared/types';
 
@@ -147,6 +152,46 @@ export class Seedance implements INodeType {
 				mimeType: itemBinary?.mimeType,
 				byteLength: binaryData.length,
 			};
+		};
+
+		const collectSeedanceReferenceMaterials = (itemIndex: number): SeedanceReferenceMaterialInput[] => {
+			const referenceMaterialsCollection = this.getNodeParameter(
+				'referenceMaterials',
+				itemIndex,
+				{},
+			) as IDataObject;
+			const referenceItems = Array.isArray(referenceMaterialsCollection.items)
+				? (referenceMaterialsCollection.items as IDataObject[])
+				: [];
+			const referenceMaterials: SeedanceReferenceMaterialInput[] = [];
+
+			for (const referenceItem of referenceItems) {
+				const materialType = ((referenceItem.materialType as string | undefined) ??
+					'image') as SeedanceReferenceMaterialType;
+				const materialSource = (materialType === 'video'
+					? ((referenceItem.videoMaterialSource as string | undefined) ?? 'url')
+					: ((referenceItem.materialSource as string | undefined) ?? 'url')) as SeedanceReferenceMaterialSource;
+				const value =
+					materialType === 'video'
+						? materialSource === 'asset'
+							? ((referenceItem.videoAssetId as string | undefined) ?? '')
+							: ((referenceItem.videoMaterialUrl as string | undefined) ?? '')
+						: materialSource === 'asset'
+							? ((referenceItem.assetId as string | undefined) ?? '')
+							: materialSource === 'binary'
+								? ((referenceItem.binaryProperty as string | undefined) ?? 'data')
+								: ((referenceItem.materialUrl as string | undefined) ?? '');
+
+				if (typeof value === 'string' && value.trim() !== '') {
+					referenceMaterials.push({
+						materialType,
+						materialSource,
+						value: value.trim(),
+					});
+				}
+			}
+
+			return referenceMaterials;
 		};
 
 		const collectSeedreamReferenceImages = async (
@@ -317,7 +362,11 @@ export class Seedance implements INodeType {
 				if (operation === 'create') {
 					const advancedOptions = this.getNodeParameter('advancedOptions', itemIndex, {}) as IDataObject;
 
-					const createMode = this.getNodeParameter('createMode', itemIndex, 't2v') as 't2v' | 'i2v_first' | 'i2v_first_last';
+					const createMode = this.getNodeParameter(
+						'createMode',
+						itemIndex,
+						't2v',
+					) as SeedanceCreateInput['createMode'];
 					const createInput: SeedanceCreateInput = {
 						createMode,
 						model: this.getNodeParameter('model', itemIndex) as string,
@@ -357,6 +406,10 @@ export class Seedance implements INodeType {
 							const binaryProp = this.getNodeParameter('lastFrameBinaryProperty', itemIndex, 'data') as string;
 							createInput.lastFrameImage = await processBinaryImage(itemIndex, binaryProp);
 						}
+					}
+
+					if (createMode === 'multimodal_reference') {
+						createInput.referenceMaterials = collectSeedanceReferenceMaterials(itemIndex);
 					}
 
 					const durationValue = this.getNodeParameter('duration', itemIndex) as number;
