@@ -4,11 +4,11 @@
 
 **Last shipped version:** v1.2
 **Last shipped date:** 2026-04-20
-**Status:** v1.3 implementation in progress; Phase 15 complete, Phase 16 next.
+**Status:** v1.3 implementation in progress; Phase 16 complete, Phase 17 next.
 
 v1.2 shipped Seedream 5.0 lite image generation inside the existing `Seedance` node while preserving the previously shipped Seedance video lifecycle. The node now supports mode-first video/image UX, prompt-only and reference-driven image generation, default binary image output, grouped image generation constraints, and execute-level regression coverage for image request shaping.
 
-v1.3 Phase 14 added the Seedance 2.0 multimodal reference entry point and reference material form. Phase 15 now maps image, video, audio, URL, binary, and asset sources into the official Seedance 2.0 multimodal content payload while preserving existing video lifecycle behavior.
+v1.3 Phase 14 added the Seedance 2.0 multimodal reference entry point and reference material form. Phase 15 maps image, video, audio, URL, binary, and asset sources into the official Seedance 2.0 multimodal content payload while preserving existing video lifecycle behavior. Phase 16 adds deterministic local validation for official Seedance 2.0 media limits, model-specific 1080p rules, and request body generation parameters.
 
 ## Current Milestone: v1.3 Seedance 2.0 multimodal reference video generation
 
@@ -55,6 +55,7 @@ v1.3 Phase 14 added the Seedance 2.0 multimodal reference entry point and refere
 | PNG branding 继续作为已接受技术债 | 当前项目选择 PNG 资源，即使社区节点 lint 倾向 SVG | ✓ Accepted debt |
 | v1.3 先研究官方 Seedance 2.0 文档再实现多模态参考生视频 | Seedance 2.0 API 文档仍在更新，需避免按旧 Seedance 1.x 或非官方字段假设实现 | ✓ Phase 14-15 applied |
 | Seedance 2.0 多模态参考素材使用官方 content roles | 图片、视频、音频分别映射为 `reference_image`、`reference_video`、`reference_audio`，并只在摘要中暴露安全元数据 | ✓ Verified in Phase 15 |
+| Seedance 2.0 本地校验只覆盖确定可知的限制 | URL/asset 媒体不做远端探测，binary 媒体仅校验 MIME、大小和可计算请求体大小，避免误拒签名或无扩展名素材 | ✓ Verified in Phase 16 |
 
 ## Archived Context
 
@@ -77,4 +78,4 @@ This document evolves at milestone boundaries.
 - Start each new milestone with `/gsd-new-milestone` so requirements stay milestone-scoped and context cost remains bounded.
 
 ---
-*Last updated: 2026-05-19 after completing Phase 15*
+*Last updated: 2026-05-19 after completing Phase 16*
