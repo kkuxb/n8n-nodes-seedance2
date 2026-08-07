@@ -14,8 +14,8 @@ export class SeedanceApi implements ICredentialType {
 	documentationUrl = 'https://www.volcengine.com/docs/82379/1298459';
 
 	icon: Icon = {
-		light: 'file:seedance-light.png',
-		dark: 'file:seedance-dark.png',
+		light: 'file:seedance-light.svg',
+		dark: 'file:seedance-dark.svg',
 	};
 
 	properties: INodeProperties[] = [

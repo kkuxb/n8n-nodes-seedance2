@@ -53,9 +53,7 @@ function createExecutionContext(parameters: Record<string, unknown>) {
 			return [{ json: {} }];
 		},
 		getNodeParameter(name: string, _itemIndex: number, fallback?: unknown) {
-			return Object.prototype.hasOwnProperty.call(parameters, name)
-				? parameters[name]
-				: fallback;
+			return Object.prototype.hasOwnProperty.call(parameters, name) ? parameters[name] : fallback;
 		},
 		getNode() {
 			return {
@@ -85,16 +83,30 @@ function createExecutionContext(parameters: Record<string, unknown>) {
 	};
 }
 
-test('generation mode selector appears before operation and defaults to video', () => {
+test('operation selector appears before generation mode and is always visible', () => {
+	const operation = findProperty('operation');
+
+	assert.ok(getPropertyIndex('operation') < getPropertyIndex('generationMode'));
+	assert.deepEqual(getOptionValues(operation), ['create', 'get', 'list', 'delete']);
+	assert.equal(operation.displayOptions, undefined);
+});
+
+test('generation mode selector is only visible when creating a task and defaults to video', () => {
 	const generationMode = findProperty('generationMode');
 
-	assert.ok(getPropertyIndex('generationMode') < getPropertyIndex('operation'));
 	assert.equal(generationMode.default, 'video');
+	assert.deepEqual(generationMode.displayOptions, {
+		show: {
+			operation: ['create'],
+		},
+	});
+	assert.equal(isVisibleFor(generationMode, { operation: 'create' }), true);
+	assert.equal(isVisibleFor(generationMode, { operation: 'get' }), false);
 	assert.deepEqual(generationMode.options, [
 		{
 			name: '视频生成',
 			value: 'video',
-			description: '创建、查询、列表和取消或删除 Seedance 视频任务',
+			description: '创建 Seedance 2.x 视频生成任务',
 		},
 		{
 			name: '图像生成',
@@ -104,23 +116,13 @@ test('generation mode selector appears before operation and defaults to video', 
 	]);
 });
 
-test('video operation selector is only visible in video mode', () => {
-	const operation = findProperty('operation');
-
-	assert.deepEqual(getOptionValues(operation), ['create', 'get', 'list', 'delete']);
-	assert.deepEqual(operation.displayOptions, {
-		show: {
-			generationMode: ['video'],
-		},
-	});
-});
-
-test('image operation selector is only visible in image mode', () => {
+test('image operation selector is only visible for image creation', () => {
 	const imageOperation = findProperty('imageOperation');
 
 	assert.deepEqual(imageOperation.displayOptions, {
 		show: {
 			generationMode: ['image'],
+			operation: ['create'],
 		},
 	});
 	assert.deepEqual(imageOperation.options, [
@@ -139,8 +141,21 @@ test('image operation selector is only visible in image mode', () => {
 	]);
 });
 
-test('text-to-image visible fields follow the requested mode-first order', () => {
+test('non-create operations hide generation mode and ignore its stale UI value', () => {
 	const visibleNames = visiblePropertyNames({
+		operation: 'get',
+		generationMode: 'image',
+		waitForCompletion: false,
+	});
+
+	assert.equal(visibleNames.includes('generationMode'), false);
+	assert.equal(visibleNames.includes('imageOperation'), false);
+	assert.equal(visibleNames.includes('taskId'), true);
+});
+
+test('text-to-image visible fields follow the operation-first order', () => {
+	const visibleNames = visiblePropertyNames({
+		operation: 'create',
 		generationMode: 'image',
 		imageOperation: 'textToImage',
 		sequentialImageGeneration: true,
@@ -149,6 +164,7 @@ test('text-to-image visible fields follow the requested mode-first order', () =>
 	assert.deepEqual(
 		visibleNames.filter((name) =>
 			[
+				'operation',
 				'generationMode',
 				'imageOperation',
 				'imageModel',
@@ -162,6 +178,7 @@ test('text-to-image visible fields follow the requested mode-first order', () =>
 			].includes(name),
 		),
 		[
+			'operation',
 			'generationMode',
 			'imageOperation',
 			'imageModel',
@@ -178,19 +195,16 @@ test('text-to-image visible fields follow the requested mode-first order', () =>
 
 test('image-to-image inserts reference controls after prompt optimization', () => {
 	const visibleNames = visiblePropertyNames({
+		operation: 'create',
 		generationMode: 'image',
 		imageOperation: 'imageToImage',
 		referenceImageSource: 'url',
 		sequentialImageGeneration: false,
 	});
 	const relevantNames = visibleNames.filter((name) =>
-		[
-			'optimizePrompt',
-			'referenceImageSource',
-			'referenceImageUrl',
-			'imageResolution',
-			'imageAspectRatio',
-		].includes(name),
+		['optimizePrompt', 'referenceImageSource', 'referenceImageUrl', 'imageResolution', 'imageAspectRatio'].includes(
+			name,
+		),
 	);
 
 	assert.deepEqual(relevantNames, [
@@ -241,7 +255,12 @@ test('image model is fixed to Seedream 5.0 lite', () => {
 });
 
 test('image operation does not expose streaming, output format, or watermark fields', () => {
-	const propertyNames = getProperties().map((property) => property.name);
+	const propertyNames = visiblePropertyNames({
+		operation: 'create',
+		generationMode: 'image',
+		imageOperation: 'textToImage',
+		sequentialImageGeneration: false,
+	});
 
 	assert.equal(propertyNames.includes('stream'), false);
 	assert.equal(propertyNames.includes('output_format'), false);

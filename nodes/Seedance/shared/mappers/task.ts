@@ -25,10 +25,19 @@ export interface SeedanceTaskResponse {
 	frames?: number;
 	framespersecond?: number;
 	generate_audio?: boolean;
+	output_format?: string;
 	service_tier?: string;
 	execution_expires_after?: number;
 	usage?: IDataObject;
-	[key: string]: IDataObject | string | number | boolean | null | undefined | Array<IDataObject | string | number | boolean> | { video_url?: string; last_frame_url?: string };
+	[key: string]:
+		| IDataObject
+		| string
+		| number
+		| boolean
+		| null
+		| undefined
+		| Array<IDataObject | string | number | boolean>
+		| { video_url?: string; last_frame_url?: string };
 }
 
 export interface SeedanceTaskListResponse {
@@ -53,7 +62,9 @@ export interface SeedanceTaskWaitMetadata extends IDataObject {
 const retention = {
 	taskHistoryDays: 7,
 	assetUrlHours: 24,
-	message: 'Seedance 仅支持查询最近 7 天任务，videoUrl/lastFrameUrl 默认 24 小时有效，请及时转存。',
+	seedance25AssetDownloadLimit: 100,
+	message:
+		'Seedance 仅支持查询最近 7 天任务，videoUrl/lastFrameUrl 默认 24 小时有效，请及时转存；Seedance 2.5 产物 URL 最多下载 100 次。',
 };
 
 export function selectSingleTaskResponse(
@@ -77,9 +88,7 @@ export function selectSingleTaskResponse(
 	throw new Error(`Task ${taskId} returned an ambiguous response with multiple matches.`);
 }
 
-export function buildAggregatedListOutput(
-	options: AggregatedListOutputOptions,
-): INodeExecutionData {
+export function buildAggregatedListOutput(options: AggregatedListOutputOptions): INodeExecutionData {
 	const mappedTasks = options.tasks.map((task) => mapTaskResponse(task));
 
 	return {
@@ -122,6 +131,7 @@ export function mapTaskResponse(response: SeedanceTaskResponse): IDataObject {
 		updatedAt: response.updated_at,
 		videoUrl: response.content?.video_url,
 		lastFrameUrl: response.content?.last_frame_url,
+		outputFormat: response.output_format,
 		usage: response.usage,
 		error: response.error
 			? {

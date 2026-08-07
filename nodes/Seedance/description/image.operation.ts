@@ -5,6 +5,7 @@ import { SEEDREAM_IMAGE_MODEL } from '../shared/constants';
 const imageModeDisplayOptions = {
 	show: {
 		generationMode: ['image'],
+		operation: ['create'],
 	},
 };
 

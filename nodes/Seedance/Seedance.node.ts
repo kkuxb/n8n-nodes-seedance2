@@ -1,4 +1,11 @@
-import { NodeOperationError, type IDataObject, type IExecuteFunctions, type INodeExecutionData, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
+import {
+	NodeOperationError,
+	type IDataObject,
+	type IExecuteFunctions,
+	type INodeExecutionData,
+	type INodeType,
+	type INodeTypeDescription,
+} from 'n8n-workflow';
 
 import { createOperationProperties } from './description/create.operation';
 import { imageOperationProperties } from './description/image.operation';
@@ -14,15 +21,18 @@ import { pollTaskUntilSettled } from './shared/polling/getTaskPolling';
 import { getSeedanceDeleteTaskEndpoint, getSeedanceOperationEndpoint } from './shared/transport/endpoints';
 import { downloadSeedanceLastFrame, downloadSeedanceVideo, seedanceApiRequest } from './shared/transport/request';
 import {
-	SEEDANCE_VIDEO_IMAGE_MAX_BYTES,
-	SEEDANCE_VIDEO_IMAGE_MIME_TYPES,
-} from './shared/constants';
-import type {
-	SeedanceCreateInput,
-	SeedanceReferenceMaterialInput,
-	SeedanceReferenceMaterialSource,
-	SeedanceReferenceMaterialType,
+	normalizeSeedanceCreateInput,
+	type SeedanceCreateInput,
+	type SeedanceReferenceMaterialInput,
+	type SeedanceReferenceMaterialSource,
+	type SeedanceReferenceMaterialType,
 } from './shared/validators/create';
+import {
+	getSeedanceVideoParameterPolicy,
+	isSeedanceVideoModel,
+	type SeedanceMultimodalTaskIntent,
+} from './shared/videoModels';
+import { SEEDANCE_VIDEO_IMAGE_MAX_BYTES, SEEDANCE_VIDEO_IMAGE_MIME_TYPES } from './shared/constants';
 import { validateSeedreamImageInput } from './shared/validators/seedreamImage';
 import type { SeedreamImagePayloadInput, SeedreamImageReferenceInput } from './shared/types';
 
@@ -30,11 +40,13 @@ export class Seedance implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Seedance',
 		name: 'seedance',
-		icon: 'file:seedance.png',
+		icon: 'file:seedance.svg',
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{$parameter["generationMode"] === "image" ? ($parameter["imageOperation"] === "imageToImage" ? "图生图" : "文生图") : $parameter["operation"] === "create" ? "创建任务" : $parameter["operation"] === "get" ? "查询任务" : $parameter["operation"] === "list" ? "获取任务列表" : "取消 / 删除任务"}}',
-		description: '在 n8n 中创建、查询和管理 Seedance 2.0 视频任务，并规划接入 Seedream 5.0 lite 图片生成。注意：生成结果 URL 默认仅 24 小时有效，请及时下载转存。',
+		subtitle:
+			'={{$parameter["operation"] === "create" ? ($parameter["generationMode"] === "image" ? ($parameter["imageOperation"] === "imageToImage" ? "图生图" : "文生图") : "创建任务") : $parameter["operation"] === "get" ? "查询任务" : $parameter["operation"] === "list" ? "获取任务列表" : "取消 / 删除任务"}}',
+		description:
+			'在 n8n 中创建、查询和管理 Seedance 2.x 视频任务，并使用 Seedream 5.0 lite 生成图片。注意：生成结果 URL 默认仅 24 小时有效，请及时下载转存。',
 		defaults: {
 			name: 'Seedance',
 		},
@@ -50,40 +62,16 @@ export class Seedance implements INodeType {
 		],
 		properties: [
 			{
-				displayName: '生成模式',
-				name: 'generationMode',
-				type: 'options',
-				noDataExpression: true,
-				default: 'video',
-				options: [
-					{
-						name: '视频生成',
-						value: 'video',
-						description: '创建、查询、列表和取消或删除 Seedance 视频任务',
-					},
-					{
-						name: '图像生成',
-						value: 'image',
-						description: '使用 Seedream 5.0 lite 生成图片',
-					},
-				],
-			},
-			{
 				displayName: '操作',
 				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
 				default: 'create',
-				displayOptions: {
-					show: {
-						generationMode: ['video'],
-					},
-				},
 				options: [
 					{
 						name: '创建任务',
 						value: 'create',
-						description: '创建 Seedance 2.0 文生视频任务',
+						description: '创建 Seedance 2.x 视频生成任务',
 						action: '创建视频生成任务',
 					},
 					{
@@ -106,6 +94,30 @@ export class Seedance implements INodeType {
 					},
 				],
 			},
+			{
+				displayName: '生成模式',
+				name: 'generationMode',
+				type: 'options',
+				noDataExpression: true,
+				default: 'video',
+				displayOptions: {
+					show: {
+						operation: ['create'],
+					},
+				},
+				options: [
+					{
+						name: '视频生成',
+						value: 'video',
+						description: '创建 Seedance 2.x 视频生成任务',
+					},
+					{
+						name: '图像生成',
+						value: 'image',
+						description: '使用 Seedream 5.0 lite 生成图片',
+					},
+				],
+			},
 			...createOperationProperties,
 			...imageOperationProperties,
 			...getOperationProperties,
@@ -120,17 +132,21 @@ export class Seedance implements INodeType {
 
 		const processBinaryImage = async (itemIndex: number, binaryProp: string) => {
 			this.helpers.assertBinaryData(itemIndex, binaryProp);
-			
+
 			const itemBinary = items[itemIndex].binary?.[binaryProp];
 			const mimeType = itemBinary?.mimeType ?? '';
-			
+
 			if (!(SEEDANCE_VIDEO_IMAGE_MIME_TYPES as readonly string[]).includes(mimeType)) {
-				throw new NodeOperationError(this.getNode(), '不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff, gif, heic 或 heif。', { itemIndex });
+				throw new NodeOperationError(
+					this.getNode(),
+					'不支持的图片格式。请使用 jpeg, png, webp, bmp, tiff, gif, heic 或 heif。',
+					{ itemIndex },
+				);
 			}
 
 			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
 			const base64Data = binaryData.toString('base64');
-			
+
 			if (binaryData.length > SEEDANCE_VIDEO_IMAGE_MAX_BYTES) {
 				throw new NodeOperationError(this.getNode(), '图片大小超出 30MB 限制。', { itemIndex });
 			}
@@ -170,11 +186,9 @@ export class Seedance implements INodeType {
 			const mimeType = itemBinary?.mimeType ?? '';
 
 			if (mimeType.trim() === '') {
-				throw new NodeOperationError(
-					this.getNode(),
-					`参考素材第 ${referenceIndex} 项的 Binary 文件缺少 MIME 类型。`,
-					{ itemIndex },
-				);
+				throw new NodeOperationError(this.getNode(), `参考素材第 ${referenceIndex} 项的 Binary 文件缺少 MIME 类型。`, {
+					itemIndex,
+				});
 			}
 
 			const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, binaryProp);
@@ -189,14 +203,8 @@ export class Seedance implements INodeType {
 			};
 		};
 
-		const collectSeedanceReferenceMaterials = async (
-			itemIndex: number,
-		): Promise<SeedanceReferenceMaterialInput[]> => {
-			const referenceMaterialsCollection = this.getNodeParameter(
-				'referenceMaterials',
-				itemIndex,
-				{},
-			) as IDataObject;
+		const collectSeedanceReferenceMaterials = async (itemIndex: number): Promise<SeedanceReferenceMaterialInput[]> => {
+			const referenceMaterialsCollection = this.getNodeParameter('referenceMaterials', itemIndex, {}) as IDataObject;
 			const referenceItems = Array.isArray(referenceMaterialsCollection.items)
 				? (referenceMaterialsCollection.items as IDataObject[])
 				: [];
@@ -205,15 +213,18 @@ export class Seedance implements INodeType {
 			for (const [referenceIndex, referenceItem] of referenceItems.entries()) {
 				const materialType = ((referenceItem.materialType as string | undefined) ??
 					'image') as SeedanceReferenceMaterialType;
-				const materialSource = (materialType === 'video'
-					? ((referenceItem.videoMaterialSource as string | undefined) ?? 'url')
-					: ((referenceItem.materialSource as string | undefined) ?? 'url')) as SeedanceReferenceMaterialSource;
+				const materialSource = (
+					materialType === 'video'
+						? ((referenceItem.videoMaterialSource as string | undefined) ?? 'url')
+						: ((referenceItem.materialSource as string | undefined) ?? 'url')
+				) as SeedanceReferenceMaterialSource;
 				let rawValue = '';
 
 				if (materialType === 'video') {
-					rawValue = materialSource === 'asset'
-						? ((referenceItem.videoAssetId as string | undefined) ?? '')
-						: ((referenceItem.videoMaterialUrl as string | undefined) ?? '');
+					rawValue =
+						materialSource === 'asset'
+							? ((referenceItem.videoAssetId as string | undefined) ?? '')
+							: ((referenceItem.videoMaterialUrl as string | undefined) ?? '');
 				} else if (materialSource === 'asset') {
 					rawValue = (referenceItem.assetId as string | undefined) ?? '';
 				} else if (materialSource === 'binary') {
@@ -263,22 +274,19 @@ export class Seedance implements INodeType {
 				return [];
 			}
 
-			const referenceImageSource = this.getNodeParameter(
-				'referenceImageSource',
-				itemIndex,
-				'none',
-			) as string;
+			const referenceImageSource = this.getNodeParameter('referenceImageSource', itemIndex, 'none') as string;
 
 			if (referenceImageSource === 'none') {
 				return [];
 			}
 
 			if (referenceImageSource === 'url') {
-				return splitCommaSeparated(this.getNodeParameter('referenceImageUrl', itemIndex, '') as string)
-					.map((value) => ({
+				return splitCommaSeparated(this.getNodeParameter('referenceImageUrl', itemIndex, '') as string).map(
+					(value) => ({
 						source: 'url' as const,
 						value,
-					}));
+					}),
+				);
 			}
 
 			if (referenceImageSource === 'base64') {
@@ -291,11 +299,9 @@ export class Seedance implements INodeType {
 			}
 
 			if (referenceImageSource === 'binary') {
-				const binaryProps = splitCommaSeparated(this.getNodeParameter(
-					'referenceImageBinaryProperty',
-					itemIndex,
-					'data',
-				) as string);
+				const binaryProps = splitCommaSeparated(
+					this.getNodeParameter('referenceImageBinaryProperty', itemIndex, 'data') as string,
+				);
 
 				const references: SeedreamImageReferenceInput[] = [];
 				for (const binaryProp of binaryProps) {
@@ -341,10 +347,9 @@ export class Seedance implements INodeType {
 			let operation: string | undefined;
 
 			try {
-				const generationMode = this.getNodeParameter('generationMode', itemIndex, 'video') as string;
-				operation = generationMode === 'image'
-					? undefined
-					: (this.getNodeParameter('operation', itemIndex, 'create') as string);
+				operation = this.getNodeParameter('operation', itemIndex, 'create') as string;
+				const savedGenerationMode = this.getNodeParameter('generationMode', itemIndex, 'video') as string;
+				const generationMode = operation === 'create' ? savedGenerationMode : 'video';
 
 				if (generationMode === 'image' || operation === 'generateImage') {
 					const imageOperation = this.getNodeParameter('imageOperation', itemIndex, '') as string;
@@ -355,9 +360,8 @@ export class Seedance implements INodeType {
 						itemIndex,
 						false,
 					) as boolean | SeedreamImagePayloadInput['sequentialImageGeneration'];
-					const sequentialImageGeneration = sequentialImageGenerationValue === true || sequentialImageGenerationValue === 'auto'
-						? 'auto'
-						: 'disabled';
+					const sequentialImageGeneration =
+						sequentialImageGenerationValue === true || sequentialImageGenerationValue === 'auto' ? 'auto' : 'disabled';
 					const maxImages = this.getNodeParameter('maxImages', itemIndex, 15) as number;
 					const optimizePrompt = this.getNodeParameter('optimizePrompt', itemIndex, true) as boolean;
 					const imageInput: SeedreamImagePayloadInput = {
@@ -417,23 +421,35 @@ export class Seedance implements INodeType {
 				if (operation === 'create') {
 					const advancedOptions = this.getNodeParameter('advancedOptions', itemIndex, {}) as IDataObject;
 
-					const createMode = this.getNodeParameter(
-						'createMode',
+					const createMode = this.getNodeParameter('createMode', itemIndex, 't2v') as SeedanceCreateInput['createMode'];
+					const model = this.getNodeParameter('model', itemIndex) as string;
+					const multimodalTaskIntent = this.getNodeParameter(
+						'multimodalTaskIntent',
 						itemIndex,
-						't2v',
-					) as SeedanceCreateInput['createMode'];
+						'reference_generation',
+					) as SeedanceMultimodalTaskIntent;
+					const parameterPolicy = isSeedanceVideoModel(model)
+						? getSeedanceVideoParameterPolicy(model, createMode, multimodalTaskIntent)
+						: undefined;
 					const createInput: SeedanceCreateInput = {
 						createMode,
-						model: this.getNodeParameter('model', itemIndex) as string,
+						model,
 						prompt: this.getNodeParameter('prompt', itemIndex, '') as string,
-						resolution: this.getNodeParameter('resolution', itemIndex) as string,
-						ratio: this.getNodeParameter('ratio', itemIndex) as string,
-						seed: (advancedOptions.seed as number | undefined) ?? -1,
+						multimodalTaskIntent,
+						resolution: this.getNodeParameter(
+							'resolution',
+							itemIndex,
+							parameterPolicy?.capabilities.defaultResolution ?? '720p',
+						) as string,
+						ratio: this.getNodeParameter('ratio', itemIndex, parameterPolicy?.defaultRatio ?? 'adaptive') as string,
+						outputFormat: this.getNodeParameter(
+							'outputFormat',
+							itemIndex,
+							'mp4',
+						) as SeedanceCreateInput['outputFormat'],
 						watermark: (advancedOptions.watermark as boolean | undefined) ?? false,
-						executionExpiresAfter:
-							(advancedOptions.executionExpiresAfter as number | undefined) ?? 172800,
-						returnLastFrame:
-							(advancedOptions.returnLastFrame as boolean | undefined) ?? false,
+						executionExpiresAfter: (advancedOptions.executionExpiresAfter as number | undefined) ?? 172800,
+						returnLastFrame: (advancedOptions.returnLastFrame as boolean | undefined) ?? false,
 						generateAudio: this.getNodeParameter('generateAudio', itemIndex) as boolean,
 					};
 
@@ -467,14 +483,23 @@ export class Seedance implements INodeType {
 						createInput.referenceMaterials = await collectSeedanceReferenceMaterials(itemIndex);
 					}
 
-					const durationValue = this.getNodeParameter('duration', itemIndex) as number;
+					const durationParameterName =
+						createMode === 'multimodal_reference' && multimodalTaskIntent === 'video_extension'
+							? 'extensionDuration'
+							: 'duration';
+					const durationValue = this.getNodeParameter(
+						durationParameterName,
+						itemIndex,
+						parameterPolicy?.defaultDuration ?? 5,
+					) as number;
 
 					if (typeof durationValue === 'number' && Number.isFinite(durationValue)) {
 						createInput.duration = durationValue;
 					}
 
-					const payload = buildCreatePayload(createInput);
-					const requestSummary = buildCreateRequestSummary(createInput);
+					const normalizedCreateInput = normalizeSeedanceCreateInput(createInput);
+					const payload = buildCreatePayload(normalizedCreateInput);
+					const requestSummary = buildCreateRequestSummary(normalizedCreateInput);
 					const response = await seedanceApiRequest(this, {
 						method: 'POST',
 						path: getSeedanceOperationEndpoint('createTask'),
@@ -494,22 +519,16 @@ export class Seedance implements INodeType {
 
 					if (waitForCompletion === true) {
 						const downloadVideo = this.getNodeParameter('downloadVideo', itemIndex, false) as boolean;
-						const waitTimeoutMinutes = Number(
-							this.getNodeParameter('waitTimeoutMinutes', itemIndex, 20),
-						);
+						const waitTimeoutMinutes = Number(this.getNodeParameter('waitTimeoutMinutes', itemIndex, 20));
 
 						if (!Number.isFinite(waitTimeoutMinutes) || waitTimeoutMinutes < 1) {
-							throw new NodeOperationError(
-								node,
-								'最长等待时间必须是大于等于 1 的有限分钟数。',
-								{ itemIndex },
-							);
+							throw new NodeOperationError(node, '最长等待时间必须是大于等于 1 的有限分钟数。', { itemIndex });
 						}
 
 						const taskResult = await pollTaskUntilSettled(this, {
-								taskId,
-								timeoutMs: waitTimeoutMinutes * 60_000,
-							});
+							taskId,
+							timeoutMs: waitTimeoutMinutes * 60_000,
+						});
 
 						const executionData: INodeExecutionData = {
 							json: taskResult,
@@ -537,11 +556,7 @@ export class Seedance implements INodeType {
 							typeof taskResult.lastFrameUrl === 'string' &&
 							taskResult.lastFrameUrl !== ''
 						) {
-							const lastFrameBinary = await downloadSeedanceLastFrame(
-								this,
-								taskResult.lastFrameUrl,
-								taskId,
-							);
+							const lastFrameBinary = await downloadSeedanceLastFrame(this, taskResult.lastFrameUrl, taskId);
 							executionData.binary = {
 								...executionData.binary,
 								lastFrame: {
@@ -565,19 +580,18 @@ export class Seedance implements INodeType {
 
 					let taskResponse;
 					try {
-						taskResponse = selectSingleTaskResponse(
-							response as Parameters<typeof selectSingleTaskResponse>[0],
-							taskId,
-						);
+						taskResponse = selectSingleTaskResponse(response as Parameters<typeof selectSingleTaskResponse>[0], taskId);
 					} catch (error) {
-						throw new NodeOperationError(node, (error as Error).message, { itemIndex });
+						throw new NodeOperationError(node, (error as Error).message, {
+							itemIndex,
+						});
 					}
 
 					returnData.push({
 						json: mapTaskResponse(taskResponse),
 						pairedItem: { item: itemIndex },
 					});
-					
+
 					continue;
 				}
 
@@ -654,7 +668,7 @@ export class Seedance implements INodeType {
 
 				if (operation === 'delete') {
 					const taskId = this.getNodeParameter('taskId', itemIndex) as string;
-					
+
 					await seedanceApiRequest(this, {
 						method: 'DELETE',
 						path: getSeedanceDeleteTaskEndpoint(taskId),

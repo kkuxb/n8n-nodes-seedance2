@@ -7,6 +7,7 @@ import type {
 	SeedanceReferenceMaterialType,
 } from '../validators/create';
 import { validateCreateInput } from '../validators/create';
+import { SEEDANCE_2_5_MODEL } from '../videoModels';
 
 type SeedanceReferenceRole = 'reference_image' | 'reference_video' | 'reference_audio';
 type SeedanceReferenceContentType = 'image_url' | 'video_url' | 'audio_url';
@@ -17,10 +18,7 @@ interface SeedanceReferenceContentMapping {
 	contentKey: SeedanceReferenceContentType;
 }
 
-const REFERENCE_CONTENT_MAPPINGS: Record<
-	SeedanceReferenceMaterialType,
-	SeedanceReferenceContentMapping
-> = {
+const REFERENCE_CONTENT_MAPPINGS: Record<SeedanceReferenceMaterialType, SeedanceReferenceContentMapping> = {
 	image: {
 		contentType: 'image_url',
 		role: 'reference_image',
@@ -49,6 +47,7 @@ export interface SeedanceCreateRequestSummary extends IDataObject {
 	createMode: string;
 	model: string;
 	prompt?: string;
+	multimodalTaskIntent?: string;
 	referenceCount?: number;
 	referenceTypes?: string[];
 	referenceSources?: string[];
@@ -56,7 +55,7 @@ export interface SeedanceCreateRequestSummary extends IDataObject {
 	resolution?: string;
 	ratio?: string;
 	duration?: number;
-	seed?: number;
+	outputFormat?: string;
 	watermark?: boolean;
 	executionExpiresAfter?: number;
 	returnLastFrame?: boolean;
@@ -68,7 +67,14 @@ export interface SeedanceCreateResponse {
 	status?: string;
 	created_at?: number;
 	createdAt?: number;
-	[key: string]: IDataObject | string | number | boolean | null | undefined | Array<IDataObject | string | number | boolean>;
+	[key: string]:
+		| IDataObject
+		| string
+		| number
+		| boolean
+		| null
+		| undefined
+		| Array<IDataObject | string | number | boolean>;
 }
 
 function normalizeReferenceMaterialValue(referenceMaterial: SeedanceReferenceMaterialInput): string {
@@ -110,7 +116,7 @@ export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
 	validateCreateInput(input);
 
 	const content: Array<IDataObject> = [];
-	
+
 	if (typeof input.prompt === 'string' && input.prompt.trim() !== '') {
 		content.push({
 			type: 'text',
@@ -119,10 +125,11 @@ export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
 	}
 
 	if (input.firstFrameImage && input.firstFrameImage.data.trim() !== '') {
-		const url = input.firstFrameImage.type === 'binary' 
-			? `data:${input.firstFrameImage.mimeType};base64,${input.firstFrameImage.data}`
-			: input.firstFrameImage.data;
-		
+		const url =
+			input.firstFrameImage.type === 'binary'
+				? `data:${input.firstFrameImage.mimeType};base64,${input.firstFrameImage.data}`
+				: input.firstFrameImage.data;
+
 		content.push({
 			type: 'image_url',
 			role: 'first_frame',
@@ -131,10 +138,11 @@ export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
 	}
 
 	if (input.lastFrameImage && input.lastFrameImage.data.trim() !== '') {
-		const url = input.lastFrameImage.type === 'binary' 
-			? `data:${input.lastFrameImage.mimeType};base64,${input.lastFrameImage.data}`
-			: input.lastFrameImage.data;
-		
+		const url =
+			input.lastFrameImage.type === 'binary'
+				? `data:${input.lastFrameImage.mimeType};base64,${input.lastFrameImage.data}`
+				: input.lastFrameImage.data;
+
 		content.push({
 			type: 'image_url',
 			role: 'last_frame',
@@ -156,7 +164,7 @@ export function buildCreatePayload(input: SeedanceCreateInput): IDataObject {
 	if (input.resolution) payload.resolution = input.resolution;
 	if (input.ratio) payload.ratio = input.ratio;
 	if (typeof input.duration === 'number') payload.duration = input.duration;
-	if (typeof input.seed === 'number') payload.seed = input.seed;
+	if (typeof input.outputFormat === 'string') payload.output_format = input.outputFormat;
 	if (typeof input.watermark === 'boolean') payload.watermark = input.watermark;
 	if (typeof input.executionExpiresAfter === 'number') {
 		payload.execution_expires_after = input.executionExpiresAfter;
@@ -174,15 +182,16 @@ export function buildCreateRequestSummary(input: SeedanceCreateInput): SeedanceC
 		createMode: input.createMode,
 		model: input.model,
 		prompt: input.prompt,
+		...(input.model === SEEDANCE_2_5_MODEL && input.createMode === 'multimodal_reference'
+			? {
+					multimodalTaskIntent: input.multimodalTaskIntent ?? 'reference_generation',
+				}
+			: {}),
 		...(input.createMode === 'multimodal_reference'
 			? {
 					referenceCount: input.referenceMaterials?.length ?? 0,
-					referenceTypes: Array.from(
-						new Set((input.referenceMaterials ?? []).map((item) => item.materialType)),
-					),
-					referenceSources: Array.from(
-						new Set((input.referenceMaterials ?? []).map((item) => item.materialSource)),
-					),
+					referenceTypes: Array.from(new Set((input.referenceMaterials ?? []).map((item) => item.materialType))),
+					referenceSources: Array.from(new Set((input.referenceMaterials ?? []).map((item) => item.materialSource))),
 					referenceSummaries: (input.referenceMaterials ?? []).map((item, index) =>
 						buildReferenceSummaryItem(item, index + 1),
 					),
@@ -191,11 +200,9 @@ export function buildCreateRequestSummary(input: SeedanceCreateInput): SeedanceC
 		...(input.resolution ? { resolution: input.resolution } : {}),
 		...(input.ratio ? { ratio: input.ratio } : {}),
 		...(typeof input.duration === 'number' ? { duration: input.duration } : {}),
-		...(typeof input.seed === 'number' ? { seed: input.seed } : {}),
+		...(typeof input.outputFormat === 'string' ? { outputFormat: input.outputFormat } : {}),
 		...(typeof input.watermark === 'boolean' ? { watermark: input.watermark } : {}),
-		...(typeof input.executionExpiresAfter === 'number'
-			? { executionExpiresAfter: input.executionExpiresAfter }
-			: {}),
+		...(typeof input.executionExpiresAfter === 'number' ? { executionExpiresAfter: input.executionExpiresAfter } : {}),
 		...(typeof input.returnLastFrame === 'boolean' ? { returnLastFrame: input.returnLastFrame } : {}),
 		...(typeof input.generateAudio === 'boolean' ? { generateAudio: input.generateAudio } : {}),
 	};

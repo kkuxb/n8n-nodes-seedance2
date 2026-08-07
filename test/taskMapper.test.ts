@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 
 const taskMapperModule = await import('../dist/nodes/Seedance/shared/mappers/task.js');
 
-const { mapTaskResponse, selectSingleTaskResponse, buildAggregatedListOutput, appendTaskWaitMetadata } = taskMapperModule;
+const { mapTaskResponse, selectSingleTaskResponse, buildAggregatedListOutput, appendTaskWaitMetadata } =
+	taskMapperModule;
 
 const allStatuses = [
 	['queued', false, false, false, true],
@@ -33,10 +34,10 @@ for (const [status, isTerminal, isSuccess, isFailure, shouldPoll] of allStatuses
 	});
 }
 
-test('成功任务映射 video_url、last_frame_url 与 usage', () => {
+test('成功任务映射 video_url、last_frame_url、output_format 与 usage', () => {
 	const mapped = mapTaskResponse({
 		id: 'task_success',
-		model: 'doubao-seedance-1-5-pro-251215',
+		model: 'doubao-seedance-2-5-260628',
 		status: 'succeeded',
 		created_at: 1710000000,
 		updated_at: 1710000600,
@@ -44,6 +45,7 @@ test('成功任务映射 video_url、last_frame_url 与 usage', () => {
 			video_url: 'https://example.com/video.mp4',
 			last_frame_url: 'https://example.com/last-frame.png',
 		},
+		output_format: 'mp4',
 		usage: {
 			completion_tokens: 100,
 			total_tokens: 100,
@@ -52,6 +54,7 @@ test('成功任务映射 video_url、last_frame_url 与 usage', () => {
 
 	assert.equal(mapped.videoUrl, 'https://example.com/video.mp4');
 	assert.equal(mapped.lastFrameUrl, 'https://example.com/last-frame.png');
+	assert.equal(mapped.outputFormat, 'mp4');
 	assert.deepEqual(mapped.usage, {
 		completion_tokens: 100,
 		total_tokens: 100,
@@ -102,6 +105,7 @@ test('单任务响应保持既有映射字段契约', () => {
 		'updatedAt',
 		'videoUrl',
 		'lastFrameUrl',
+		'outputFormat',
 		'usage',
 		'error',
 		'isTerminal',
@@ -120,7 +124,24 @@ test('单任务响应保持既有映射字段契约', () => {
 	assert.equal(mapped.isFailure, false);
 	assert.equal(mapped.shouldPoll, false);
 	assert.match((mapped.retention as { message: string }).message, /7 天/);
+	assert.match((mapped.retention as { message: string }).message, /100 次/);
 	assert.ok(mapped.raw);
+});
+
+test('异步任务保留 InvalidParameter.TaskTypeConstraint 错误码', () => {
+	const mapped = mapTaskResponse({
+		id: 'task_constraint',
+		status: 'failed',
+		error: {
+			code: 'InvalidParameter.TaskTypeConstraint',
+			message: 'The reference combination does not match the task type.',
+		},
+	});
+
+	assert.deepEqual(mapped.error, {
+		code: 'InvalidParameter.TaskTypeConstraint',
+		message: 'The reference combination does not match the task type.',
+	});
 });
 
 test('等待元数据以 additive 方式追加且保留既有任务映射键', () => {
@@ -145,10 +166,7 @@ test('等待元数据以 additive 方式追加且保留既有任务映射键', (
 	assert.equal(withWaitMetadata.timedOut, false);
 	assert.equal(withWaitMetadata.pollCount, 2);
 	assert.equal(withWaitMetadata.waitedMs, 20_000);
-	assert.deepEqual(
-		Object.keys(withWaitMetadata).slice(originalKeys.length),
-		['timedOut', 'pollCount', 'waitedMs'],
-	);
+	assert.deepEqual(Object.keys(withWaitMetadata).slice(originalKeys.length), ['timedOut', 'pollCount', 'waitedMs']);
 });
 
 test('列表响应按 taskId 提取唯一匹配任务', () => {
@@ -207,7 +225,11 @@ test('列表聚合输出为单个 item 且 json.tasks 保留映射后的任务�
 	const listItem = buildAggregatedListOutput({
 		tasks: [
 			{ id: 'task_123', status: 'queued' },
-			{ id: 'task_456', status: 'succeeded', content: { video_url: 'https://example.com/video.mp4' } },
+			{
+				id: 'task_456',
+				status: 'succeeded',
+				content: { video_url: 'https://example.com/video.mp4' },
+			},
 		],
 		returnAll: true,
 		pageNum: 1,
@@ -229,7 +251,7 @@ test('列表聚合输出为单个 item 且 json.tasks 保留映射后的任务�
 	assert.equal((listItem.json as { returnAll: boolean }).returnAll, true);
 	assert.equal((listItem.json as { pageNum: number }).pageNum, 1);
 	assert.equal((listItem.json as { pageSize: number }).pageSize, 100);
-	assert.match(((listItem.json as { retention: { message: string } }).retention.message), /7 天/);
+	assert.match((listItem.json as { retention: { message: string } }).retention.message, /7 天/);
 	assert.deepEqual(listItem.pairedItem, { item: 0 });
 
 	const tasks = (listItem.json as { tasks: Array<Record<string, unknown>> }).tasks;

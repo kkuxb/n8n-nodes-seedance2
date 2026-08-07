@@ -5,9 +5,11 @@ import assert from 'node:assert/strict';
 const createOperationModule = await import('../dist/nodes/Seedance/description/create.operation.js');
 const createPayloadModule = await import('../dist/nodes/Seedance/shared/mappers/createPayload.js');
 const constantsModule = await import('../dist/nodes/Seedance/shared/constants.js');
+const createValidatorModule = await import('../dist/nodes/Seedance/shared/validators/create.js');
 
 const { createOperationProperties } = createOperationModule;
 const { buildCreatePayload, buildCreateRequestSummary, mapCreateResponse } = createPayloadModule;
+const { normalizeSeedanceCreateInput } = createValidatorModule;
 const {
 	SEEDANCE_VIDEO_AUDIO_MAX_BYTES,
 	SEEDANCE_VIDEO_AUDIO_MIME_TYPES,
@@ -17,9 +19,7 @@ const {
 } = constantsModule;
 
 function getCreateModeProperty() {
-	const createModeProperty = createOperationProperties.find(
-		(property) => property.name === 'createMode',
-	);
+	const createModeProperty = createOperationProperties.find((property) => property.name === 'createMode');
 
 	assert.ok(createModeProperty);
 	return createModeProperty;
@@ -34,21 +34,18 @@ function getReferenceMaterialsProperty() {
 	return referenceMaterialsProperty;
 }
 
-test('顶层的默认视频时长为 5 秒', () => {
-	const durationProperty = createOperationProperties.find(
-		(property) => property.name === 'duration',
-	);
-
-	assert.ok(durationProperty);
-	assert.equal(durationProperty.default, 5);
-});
-
-test('模型字段仍然仅暴露 Seedance 2.0 系列下拉选项', () => {
+test('模型字段将 Seedance 2.5 置顶并设为默认，同时保留 2.0 系列', () => {
 	const modelProperty = createOperationProperties.find((property) => property.name === 'model');
 
 	assert.ok(modelProperty);
 	assert.equal(modelProperty.type, 'options');
+	assert.equal(modelProperty.default, 'doubao-seedance-2-5-260628');
 	assert.deepEqual(modelProperty.options, [
+		{
+			name: 'Seedance 2.5',
+			value: 'doubao-seedance-2-5-260628',
+			description: '模型 ID：doubao-seedance-2-5-260628',
+		},
 		{
 			name: 'Seedance 2.0',
 			value: 'doubao-seedance-2-0-260128',
@@ -130,7 +127,10 @@ test('多模态参考素材表单使用锁定字段名且不包含标签字段',
 		values.map((value) => value.displayName),
 		['素材类型', '素材来源', '素材来源', '素材URL', '素材URL', '属性名', '素材ID', '素材ID'],
 	);
-	assert.equal(values.some((value) => /标签|备注|名称/.test(value.displayName)), false);
+	assert.equal(
+		values.some((value) => /标签|备注|名称/.test(value.displayName)),
+		false,
+	);
 
 	const materialType = values.find((value) => value.name === 'materialType');
 	assert.ok(materialType);
@@ -158,6 +158,49 @@ test('多模态参考素材表单使用锁定字段名且不包含标签字段',
 	]);
 });
 
+test('Seedance 2.5 默认时长显示为自动，宽高比 API 值显示为自适应', () => {
+	const seedance25Duration = createOperationProperties.find(
+		(property) =>
+			property.name === 'duration' &&
+			property.displayOptions.show.model?.includes('doubao-seedance-2-5-260628') &&
+			property.displayOptions.show.createMode?.includes('t2v'),
+	);
+	const ratioProperties = createOperationProperties.filter(
+		(property) => property.name === 'ratio' || property.name === 'forcedRatio',
+	);
+
+	assert.ok(seedance25Duration);
+	assert.equal(seedance25Duration.default, -1);
+	assert.deepEqual(seedance25Duration.options.at(-1), {
+		name: '自动',
+		value: -1,
+	});
+	assert.ok(ratioProperties.length > 0);
+
+	for (const ratioProperty of ratioProperties) {
+		const adaptiveOption = ratioProperty.options.find((option: { value: string }) => option.value === 'adaptive');
+		assert.ok(adaptiveOption);
+		assert.match(adaptiveOption.name, /^自适应/);
+	}
+});
+
+test('Seedance 2.5 多模态任务意图位于生成参数前且默认参考生成', () => {
+	const taskIntentIndex = createOperationProperties.findIndex((property) => property.name === 'multimodalTaskIntent');
+	const referenceMaterialsIndex = createOperationProperties.findIndex(
+		(property) => property.name === 'referenceMaterials',
+	);
+	const firstResolutionIndex = createOperationProperties.findIndex((property) => property.name === 'resolution');
+	const taskIntent = createOperationProperties[taskIntentIndex];
+
+	assert.ok(taskIntentIndex > referenceMaterialsIndex);
+	assert.ok(taskIntentIndex < firstResolutionIndex);
+	assert.equal(taskIntent.default, 'reference_generation');
+	assert.deepEqual(
+		taskIntent.options.map((option: { value: string }) => option.value),
+		['reference_generation', 'video_edit', 'video_extension'],
+	);
+});
+
 test('首尾帧字段不会在多模态参考生视频模式显示', () => {
 	for (const propertyName of [
 		'firstFrameInputMethod',
@@ -178,12 +221,8 @@ test('首尾帧字段不会在多模态参考生视频模式显示', () => {
 });
 
 test('首尾帧图生视频 Binary 输入方式显示为 Binary文件', () => {
-	const firstFrameInputMethod = createOperationProperties.find(
-		(property) => property.name === 'firstFrameInputMethod',
-	);
-	const lastFrameInputMethod = createOperationProperties.find(
-		(property) => property.name === 'lastFrameInputMethod',
-	);
+	const firstFrameInputMethod = createOperationProperties.find((property) => property.name === 'firstFrameInputMethod');
+	const lastFrameInputMethod = createOperationProperties.find((property) => property.name === 'lastFrameInputMethod');
 
 	assert.ok(firstFrameInputMethod);
 	assert.ok(lastFrameInputMethod);
@@ -198,7 +237,7 @@ test('首尾帧图生视频 Binary 输入方式显示为 Binary文件', () => {
 });
 
 test('真人脸限制提示放在图片相关取值字段描述中', () => {
-	const notice = 'Seedance 2.0 当前只接受两类真人脸参考素材';
+	const notice = 'Seedance 2.x 不支持直接上传未经授权的真人人脸参考素材';
 	const referenceMaterialsProperty = getReferenceMaterialsProperty();
 	const values = referenceMaterialsProperty.options[0].values as Array<{
 		name: string;
@@ -226,21 +265,20 @@ test('真人脸限制提示放在图片相关取值字段描述中', () => {
 	assert.doesNotMatch(String(referenceMaterialsProperty.description), new RegExp(notice));
 });
 
-test('高级选项只包含 4 个进阶参数', () => {
-	const advancedOptionsProperty = createOperationProperties.find(
-		(property) => property.name === 'advancedOptions',
-	);
+test('高级选项只包含当前 API 支持的 3 个进阶参数', () => {
+	const advancedOptionsProperty = createOperationProperties.find((property) => property.name === 'advancedOptions');
 
 	assert.ok(advancedOptionsProperty);
 	assert.deepEqual(
 		advancedOptionsProperty.options.map((property: { name: string }) => property.name),
-		['seed', 'watermark', 'returnLastFrame', 'executionExpiresAfter'],
+		['watermark', 'returnLastFrame', 'executionExpiresAfter'],
 	);
 });
 
-test('Seedance 2.0 与 Fast 使用互斥分辨率选项', () => {
-	const resolutionProperties = createOperationProperties.filter(
-		(property) => property.name === 'resolution',
+test('三个视频模型分别暴露有效分辨率，Seedance 2.0 标准版包含 4K', () => {
+	const resolutionProperties = createOperationProperties.filter((property) => property.name === 'resolution');
+	const seedance25ResolutionProperty = resolutionProperties.find((property) =>
+		property.displayOptions.show.model?.includes('doubao-seedance-2-5-260628'),
 	);
 	const standardResolutionProperty = resolutionProperties.find((property) =>
 		property.displayOptions.show.model?.includes('doubao-seedance-2-0-260128'),
@@ -249,11 +287,16 @@ test('Seedance 2.0 与 Fast 使用互斥分辨率选项', () => {
 		property.displayOptions.show.model?.includes('doubao-seedance-2-0-fast-260128'),
 	);
 
+	assert.ok(seedance25ResolutionProperty);
 	assert.ok(standardResolutionProperty);
 	assert.ok(fastResolutionProperty);
 	assert.deepEqual(
+		seedance25ResolutionProperty.options.map((option: { value: string }) => option.value),
+		['480p', '720p'],
+	);
+	assert.deepEqual(
 		standardResolutionProperty.options.map((option: { value: string }) => option.value),
-		['480p', '720p', '1080p'],
+		['480p', '720p', '1080p', '4k'],
 	);
 	assert.deepEqual(
 		fastResolutionProperty.options.map((option: { value: string }) => option.value),
@@ -261,10 +304,57 @@ test('Seedance 2.0 与 Fast 使用互斥分辨率选项', () => {
 	);
 });
 
-test('视频高级选项中的水印默认值为 false', () => {
-	const advancedOptionsProperty = createOperationProperties.find(
-		(property) => property.name === 'advancedOptions',
+test('Seedance 2.5 受限模式使用独立字段即时显示自适应和自动', () => {
+	const frameRatio = createOperationProperties.find(
+		(property) =>
+			property.name === 'forcedRatio' &&
+			property.displayOptions.show.model?.includes('doubao-seedance-2-5-260628') &&
+			property.displayOptions.show.createMode?.includes('i2v_first_last'),
 	);
+	const editRatio = createOperationProperties.find(
+		(property) =>
+			property.name === 'forcedRatio' && property.displayOptions.show.multimodalTaskIntent?.includes('video_edit'),
+	);
+	const editDuration = createOperationProperties.find(
+		(property) =>
+			property.name === 'forcedDuration' &&
+			property.displayOptions.show.multimodalTaskIntent?.length === 1 &&
+			property.displayOptions.show.multimodalTaskIntent.includes('video_edit'),
+	);
+	const extensionDuration = createOperationProperties.find(
+		(property) =>
+			property.name === 'extensionDuration' &&
+			property.displayOptions.show.multimodalTaskIntent?.includes('video_extension'),
+	);
+
+	assert.ok(frameRatio);
+	assert.ok(editRatio);
+	assert.ok(editDuration);
+	assert.ok(extensionDuration);
+	assert.equal(frameRatio.default, 'adaptive');
+	assert.equal(editRatio.default, 'adaptive');
+	assert.equal(editDuration.default, -1);
+	assert.equal(extensionDuration.default, -1);
+	assert.deepEqual(frameRatio.options, [{ name: '自适应（该任务要求）', value: 'adaptive' }]);
+	assert.deepEqual(editRatio.options, [{ name: '自适应（该任务要求）', value: 'adaptive' }]);
+	assert.deepEqual(editDuration.options, [{ name: '自动（该任务要求）', value: -1 }]);
+	assert.deepEqual(extensionDuration.options.at(-1), { name: '自动', value: -1 });
+});
+
+test('Seedance 2.5 输出格式字段仅对该模型显示', () => {
+	const outputFormat = createOperationProperties.find((property) => property.name === 'outputFormat');
+
+	assert.ok(outputFormat);
+	assert.equal(outputFormat.default, 'mp4');
+	assert.deepEqual(
+		outputFormat.options.map((option: { value: string }) => option.value),
+		['mp4', 'mov'],
+	);
+	assert.deepEqual(outputFormat.displayOptions.show.model, ['doubao-seedance-2-5-260628']);
+});
+
+test('视频高级选项中的水印默认值为 false', () => {
+	const advancedOptionsProperty = createOperationProperties.find((property) => property.name === 'advancedOptions');
 
 	assert.ok(advancedOptionsProperty);
 	const watermarkProperty = advancedOptionsProperty.options.find(
@@ -294,7 +384,6 @@ test('文生 create payload 自动构造 text content 项', () => {
 		resolution: '720p',
 		ratio: 'adaptive',
 		duration: 5,
-		seed: 11,
 		watermark: true,
 		executionExpiresAfter: 7200,
 		returnLastFrame: true,
@@ -306,7 +395,7 @@ test('文生 create payload 自动构造 text content 项', () => {
 	assert.equal(payload.resolution, '720p');
 	assert.equal(payload.duration, 5);
 	assert.equal(payload.ratio, 'adaptive');
-	assert.equal(payload.seed, 11);
+	assert.equal('seed' in payload, false);
 	assert.equal(payload.watermark, true);
 	assert.equal(payload.execution_expires_after, 7200);
 	assert.equal(payload.return_last_frame, true);
@@ -337,7 +426,11 @@ test('首帧图生模式自动构造 first_frame role 的图片', () => {
 	});
 	assert.deepEqual(payload.content, [
 		{ type: 'text', text: 'A cat' },
-		{ type: 'image_url', role: 'first_frame', image_url: { url: 'http://example.com/cat.jpg' } },
+		{
+			type: 'image_url',
+			role: 'first_frame',
+			image_url: { url: 'http://example.com/cat.jpg' },
+		},
 	]);
 });
 
@@ -358,8 +451,16 @@ test('首尾帧图生模式构造首尾两张图片，并支持 Base64', () => {
 		},
 	});
 	assert.deepEqual(payload.content, [
-		{ type: 'image_url', role: 'first_frame', image_url: { url: 'data:image/png;base64,base64_first' } },
-		{ type: 'image_url', role: 'last_frame', image_url: { url: 'data:image/jpeg;base64,base64_last' } },
+		{
+			type: 'image_url',
+			role: 'first_frame',
+			image_url: { url: 'data:image/png;base64,base64_first' },
+		},
+		{
+			type: 'image_url',
+			role: 'last_frame',
+			image_url: { url: 'data:image/jpeg;base64,base64_last' },
+		},
 	]);
 });
 
@@ -453,6 +554,247 @@ test('多模态参考生视频允许只有图片或只有视频且提示词可�
 	]);
 });
 
+test('Seedance 2.5 四种创建模式都能构造官方 payload', () => {
+	const model = 'doubao-seedance-2-5-260628';
+	const textPayload = buildCreatePayload({
+		createMode: 't2v',
+		model,
+		prompt: '城市日出',
+		resolution: '720p',
+		ratio: '16:9',
+		duration: -1,
+		outputFormat: 'mp4',
+	});
+	const firstFramePayload = buildCreatePayload({
+		createMode: 'i2v_first',
+		model,
+		firstFrameImage: { type: 'url', data: 'https://example.com/first.png' },
+		resolution: '480p',
+		ratio: 'adaptive',
+		duration: 30,
+		outputFormat: 'mov',
+	});
+	const firstLastFramePayload = buildCreatePayload({
+		createMode: 'i2v_first_last',
+		model,
+		firstFrameImage: { type: 'url', data: 'https://example.com/first.png' },
+		lastFrameImage: { type: 'url', data: 'https://example.com/last.png' },
+		resolution: '720p',
+		ratio: 'adaptive',
+		duration: 4,
+		outputFormat: 'mp4',
+	});
+	const multimodalPayload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model,
+		multimodalTaskIntent: 'reference_generation',
+		referenceMaterials: [
+			{
+				materialType: 'audio',
+				materialSource: 'url',
+				value: 'https://example.com/reference.wav',
+			},
+		],
+		resolution: '720p',
+		ratio: '1:1',
+		duration: 30,
+		outputFormat: 'mov',
+	});
+
+	assert.deepEqual(textPayload.content, [{ type: 'text', text: '城市日出' }]);
+	assert.deepEqual(
+		(firstFramePayload.content as Array<{ role?: string }>).map((item) => item.role),
+		['first_frame'],
+	);
+	assert.deepEqual(
+		(firstLastFramePayload.content as Array<{ role?: string }>).map((item) => item.role),
+		['first_frame', 'last_frame'],
+	);
+	assert.deepEqual(multimodalPayload.content, [
+		{
+			type: 'audio_url',
+			role: 'reference_audio',
+			audio_url: { url: 'https://example.com/reference.wav' },
+		},
+	]);
+	assert.equal(textPayload.output_format, 'mp4');
+	assert.equal(firstFramePayload.output_format, 'mov');
+	assert.equal(firstLastFramePayload.output_format, 'mp4');
+	assert.equal(multimodalPayload.output_format, 'mov');
+	assert.equal('multimodalTaskIntent' in multimodalPayload, false);
+});
+
+test('Seedance 2.5 接受 30/10/10 个多模态素材边界并拒绝越界', () => {
+	const references = [
+		...Array.from({ length: 30 }, (_, index) => ({
+			materialType: 'image' as const,
+			materialSource: 'url' as const,
+			value: `https://example.com/image-${index}.png`,
+		})),
+		...Array.from({ length: 10 }, (_, index) => ({
+			materialType: 'video' as const,
+			materialSource: 'url' as const,
+			value: `https://example.com/video-${index}.mp4`,
+		})),
+		...Array.from({ length: 10 }, (_, index) => ({
+			materialType: 'audio' as const,
+			materialSource: 'url' as const,
+			value: `https://example.com/audio-${index}.wav`,
+		})),
+	];
+
+	const payload = buildCreatePayload({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-5-260628',
+		referenceMaterials: references,
+	});
+
+	assert.equal(payload.content.length, 50);
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-5-260628',
+				referenceMaterials: [
+					...references,
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: 'https://example.com/image-over-limit.png',
+					},
+				],
+			}),
+		/最多支持 30 张参考图片/,
+	);
+});
+
+test('任务意图约束视频素材、宽高比和时长', () => {
+	const videoReference = {
+		materialType: 'video' as const,
+		materialSource: 'url' as const,
+		value: 'https://example.com/reference.mp4',
+	};
+
+	assert.doesNotThrow(() =>
+		buildCreatePayload({
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-5-260628',
+			multimodalTaskIntent: 'video_edit',
+			referenceMaterials: [videoReference],
+			ratio: 'adaptive',
+			duration: -1,
+		}),
+	);
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-5-260628',
+				multimodalTaskIntent: 'video_edit',
+				referenceMaterials: [videoReference],
+				ratio: '16:9',
+				duration: 5,
+			}),
+		/当前任务仅支持 adaptive 宽高比/,
+	);
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-5-260628',
+				multimodalTaskIntent: 'video_extension',
+				referenceMaterials: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						value: 'https://example.com/image.png',
+					},
+				],
+			}),
+		/必须至少提供 1 个参考视频/,
+	);
+});
+
+test('隐藏字段的旧值会按当前模型、模式和任务意图自动归一化', () => {
+	const editInput = normalizeSeedanceCreateInput({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-5-260628',
+		multimodalTaskIntent: 'video_edit',
+		resolution: '4k',
+		ratio: '16:9',
+		duration: 12,
+		outputFormat: 'invalid',
+	});
+	const oldModelInput = normalizeSeedanceCreateInput({
+		createMode: 't2v',
+		model: 'doubao-seedance-2-0-260128',
+		resolution: '4k',
+		ratio: 'adaptive',
+		duration: 30,
+		outputFormat: 'mov',
+	});
+
+	assert.equal(editInput.resolution, '720p');
+	assert.equal(editInput.ratio, 'adaptive');
+	assert.equal(editInput.duration, -1);
+	assert.equal(editInput.outputFormat, 'mp4');
+	assert.equal(oldModelInput.resolution, '4k');
+	assert.equal(oldModelInput.duration, 5);
+	assert.equal('outputFormat' in oldModelInput, false);
+	assert.equal('multimodalTaskIntent' in oldModelInput, false);
+});
+
+test('从 Seedance 2.5 切回 2.0 后会忽略隐藏的任务意图', () => {
+	const normalizedInput = normalizeSeedanceCreateInput({
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-0-260128',
+		multimodalTaskIntent: 'video_edit',
+		referenceMaterials: [
+			{
+				materialType: 'image',
+				materialSource: 'url',
+				value: 'https://example.com/reference.png',
+			},
+		],
+	});
+
+	assert.equal('multimodalTaskIntent' in normalizedInput, false);
+	assert.doesNotThrow(() => buildCreatePayload(normalizedInput));
+});
+
+test('2.0 时长仍限制为 4 到 15 秒，MOV 仅允许 Seedance 2.5', () => {
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 't2v',
+				model: 'doubao-seedance-2-5-260628',
+				prompt: '城市夜景',
+				outputFormat: 'avi',
+			}),
+		/Seedance 2.5 仅支持 mp4、mov 输出格式/,
+	);
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 't2v',
+				model: 'doubao-seedance-2-0-260128',
+				prompt: '城市夜景',
+				duration: 16,
+			}),
+		/4 到 15 秒，或自动/,
+	);
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 't2v',
+				model: 'doubao-seedance-2-0-260128',
+				prompt: '城市夜景',
+				outputFormat: 'mov',
+			}),
+		/Seedance 2.0 不支持设置输出格式/,
+	);
+});
+
 test('多模态 request summary 保留聚合字段并新增逐项安全摘要', () => {
 	const summary = buildCreateRequestSummary({
 		createMode: 'multimodal_reference',
@@ -497,6 +839,7 @@ test('多模态 request summary 保留聚合字段并新增逐项安全摘要', 
 	assert.equal(JSON.stringify(summary).includes('audio/wav'), false);
 	assert.equal(JSON.stringify(summary).includes('byteLength'), false);
 	assert.equal(JSON.stringify(summary).includes('encodedByteLength'), false);
+	assert.equal('multimodalTaskIntent' in summary, false);
 });
 
 test('视频参考素材不接受 Binary 文件来源', () => {
@@ -517,7 +860,7 @@ test('视频参考素材不接受 Binary 文件来源', () => {
 	);
 });
 
-test('多模态参考生视频拒绝空素材、只有提示词和只有音频', () => {
+test('Seedance 2.0 多模态参考生视频拒绝空素材、只有提示词和只有音频', () => {
 	assert.throws(
 		() =>
 			buildCreatePayload({
@@ -526,7 +869,7 @@ test('多模态参考生视频拒绝空素材、只有提示词和只有音频',
 				prompt: '只有提示词',
 				referenceMaterials: [],
 			}),
-		/至少提供 1 个参考图片或参考视频/,
+		/至少提供 1 个参考素材/,
 	);
 
 	assert.throws(
@@ -542,7 +885,7 @@ test('多模态参考生视频拒绝空素材、只有提示词和只有音频',
 					},
 				],
 			}),
-		/至少提供 1 个参考图片或参考视频/,
+		/不支持纯音频参考/,
 	);
 
 	assert.throws(
@@ -620,7 +963,7 @@ test('多模态参考生视频执行 Phase 15 数量上限', () => {
 	);
 });
 
-test('标准 Seedance 2.0 支持 1080p 且 Fast 防御性拒绝 1080p', () => {
+test('标准 Seedance 2.0 支持 1080p 和 4K，Fast 与 2.5 拒绝越界分辨率', () => {
 	assert.equal(
 		buildCreatePayload({
 			createMode: 't2v',
@@ -629,6 +972,15 @@ test('标准 Seedance 2.0 支持 1080p 且 Fast 防御性拒绝 1080p', () => {
 			resolution: '1080p',
 		}).resolution,
 		'1080p',
+	);
+	assert.equal(
+		buildCreatePayload({
+			createMode: 't2v',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: '城市夜景',
+			resolution: '4k',
+		}).resolution,
+		'4k',
 	);
 
 	assert.throws(
@@ -639,7 +991,17 @@ test('标准 Seedance 2.0 支持 1080p 且 Fast 防御性拒绝 1080p', () => {
 				prompt: '城市夜景',
 				resolution: '1080p',
 			}),
-		/Fast 不支持 1080p/,
+		/Seedance 2.0 Fast 仅支持 480p、720p/,
+	);
+	assert.throws(
+		() =>
+			buildCreatePayload({
+				createMode: 't2v',
+				model: 'doubao-seedance-2-5-260628',
+				prompt: '城市夜景',
+				resolution: '4k',
+			}),
+		/Seedance 2.5 仅支持 480p、720p/,
 	);
 
 	for (const model of ['doubao-seedance-2-0-260128', 'doubao-seedance-2-0-fast-260128']) {
@@ -789,7 +1151,9 @@ test('多模态 URL 和素材 ID 不按扩展名或远端元数据探测', () =>
 		{
 			type: 'image_url',
 			role: 'reference_image',
-			image_url: { url: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc' },
+			image_url: {
+				url: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc',
+			},
 		},
 		{
 			type: 'audio_url',
@@ -821,7 +1185,7 @@ test('不支持的模型会抛出明确错误', () => {
 				model: 'doubao-seedance-1-5-pro-251215',
 				prompt: '城市夜景',
 			}),
-		/仅支持 Seedance 2.0 和 Seedance 2.0 fast/,
+		/仅支持 Seedance 2.5、Seedance 2.0 和 Seedance 2.0 Fast/,
 	);
 });
 

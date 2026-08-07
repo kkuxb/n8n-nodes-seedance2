@@ -1,13 +1,14 @@
 {
   "name": "n8n-nodes-seedance2",
-  "version": "1.4.0",
-  "description": "对接火山方舟官方API，使用seedance2.0模型生成视频。或使用seedream5.0模型生成图像。",
+  "version": "1.5.0",
+  "description": "对接火山方舟官方 API，使用 Seedance 2.5/2.0 模型生成视频，或使用 Seedream 5.0 模型生成图像。",
   "license": "MIT",
   "homepage": "https://github.com/kkuxb/n8n-nodes-seedance2",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
     "seedance",
+    "seedance2.5",
     "seedance2.0",
     "seedream5.0",
     "即梦",
@@ -41,6 +42,7 @@
     "dev": "node scripts/dev.mjs",
     "dev:setup": "node scripts/setup-dev-runtime.mjs",
     "lint": "n8n-node lint",
+    "test": "npm run build && node --test test/*.test.ts",
     "lint:fix": "n8n-node lint --fix"
   },
   "n8n": {

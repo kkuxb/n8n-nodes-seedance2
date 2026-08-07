@@ -137,7 +137,7 @@ test('prompt-only image generation returns one item with binary.image1', async (
 	assert.equal((calls[0].body as Record<string, unknown>).watermark, false);
 });
 
-test('image mode succeeds when operation parameter is absent from saved workflow state', async () => {
+test('image mode treats a missing legacy operation parameter as create', async () => {
 	const requestedParameters: string[] = [];
 	const { calls, context } = createExecutionContext(
 		baseParameters,
@@ -153,13 +153,12 @@ test('image mode succeeds when operation parameter is absent from saved workflow
 
 	assert.equal(result[0][0].binary?.image1.data, 'RAW_BASE64_SENTINEL');
 	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
-	assert.equal(requestedParameters.includes('operation'), false);
+	assert.equal(requestedParameters.includes('operation'), true);
 });
 
 test('image mode ignores stale video-only saved workflow parameters', async () => {
 	const requestedParameters: string[] = [];
 	const forbiddenParameters = [
-		'operation',
 		'createMode',
 		'referenceMaterials',
 		'firstFrameInputMethod',
@@ -201,6 +200,7 @@ test('image mode ignores stale video-only saved workflow parameters', async () =
 
 	assert.equal(result[0][0].binary?.image1.data, 'RAW_BASE64_SENTINEL');
 	assert.match(String(calls[0].url), /\/api\/v3\/images\/generations$/);
+	assert.equal(requestedParameters.includes('operation'), true);
 	for (const parameter of forbiddenParameters) {
 		assert.equal(requestedParameters.includes(parameter), false, `${parameter} should not be read`);
 	}
@@ -421,10 +421,10 @@ test('mixed reference sources are posted through the image payload layer', async
 	]);
 });
 
-test('video operations still use video branches when generationMode is video', async () => {
+test('non-create operations ignore a stale image generation mode', async () => {
 	const { calls, context } = createExecutionContext(
 		{
-			generationMode: 'video',
+			generationMode: 'image',
 			operation: 'get',
 			taskId: 'task_123',
 			waitForCompletion: false,

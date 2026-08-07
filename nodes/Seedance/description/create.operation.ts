@@ -1,5 +1,14 @@
 import type { INodeProperties } from 'n8n-workflow';
 
+import {
+	getSeedanceVideoModelCapabilities,
+	SEEDANCE_2_0_FAST_MODEL,
+	SEEDANCE_2_0_MODEL,
+	SEEDANCE_2_5_MODEL,
+	SEEDANCE_RATIOS,
+	SEEDANCE_VIDEO_MODEL_IDS,
+} from '../shared/videoModels';
+
 const createDisplayOptions = {
 	show: {
 		generationMode: ['video'],
@@ -8,28 +17,55 @@ const createDisplayOptions = {
 };
 
 const imageFaceReferenceNotice =
-	'Seedance 2.0 当前只接受两类真人脸参考素材：Seedream 5.0 Lite 文生图生成的素材，或火山方舟素材库素材。';
+	'Seedance 2.x 不支持直接上传未经授权的真人人脸参考素材，请使用平台信任的模型产物、预置虚拟人像或已授权真人素材。';
+
+const modelOptions = SEEDANCE_VIDEO_MODEL_IDS.map((model) => {
+	const capabilities = getSeedanceVideoModelCapabilities(model);
+
+	return {
+		name: capabilities.name,
+		value: capabilities.id,
+		description: capabilities.description,
+	};
+});
+
+const ratioOptions = SEEDANCE_RATIOS.map((ratio) => ({
+	name: ratio === 'adaptive' ? '自适应' : ratio,
+	value: ratio,
+}));
+
+function buildResolutionOptions(
+	model: (typeof SEEDANCE_VIDEO_MODEL_IDS)[number],
+): Array<{ name: string; value: string }> {
+	return getSeedanceVideoModelCapabilities(model).resolutions.map((resolution) => ({
+		name: resolution === '4k' ? '4K' : resolution,
+		value: resolution,
+	}));
+}
+
+function buildDurationOptions(
+	model: (typeof SEEDANCE_VIDEO_MODEL_IDS)[number],
+): Array<{ name: string; value: number }> {
+	const capabilities = getSeedanceVideoModelCapabilities(model);
+	const options = [];
+
+	for (let duration = capabilities.minimumDuration; duration <= capabilities.maximumDuration; duration++) {
+		options.push({ name: `${duration} 秒`, value: duration });
+	}
+
+	options.push({ name: '自动', value: -1 });
+	return options;
+}
 
 export const createOperationProperties: INodeProperties[] = [
 	{
 		displayName: '模型',
 		name: 'model',
 		type: 'options',
-		default: 'doubao-seedance-2-0-260128',
-		options: [
-			{
-				name: 'Seedance 2.0',
-				value: 'doubao-seedance-2-0-260128',
-				description: '模型 ID：doubao-seedance-2-0-260128',
-			},
-			{
-				name: 'Seedance 2.0 Fast',
-				value: 'doubao-seedance-2-0-fast-260128',
-				description: '模型 ID：doubao-seedance-2-0-fast-260128',
-			},
-		],
+		default: SEEDANCE_2_5_MODEL,
+		options: modelOptions,
 		required: true,
-		description: '请选择当前节点支持的 Seedance 2.0 系列模型',
+		description: '选择视频生成模型。新建节点默认使用 Seedance 2.5',
 		displayOptions: createDisplayOptions,
 	},
 	{
@@ -278,20 +314,33 @@ export const createOperationProperties: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: '分辨率',
-		name: 'resolution',
+		displayName: '任务意图',
+		name: 'multimodalTaskIntent',
 		type: 'options',
-		default: '720p',
+		default: 'reference_generation',
 		options: [
-			{ name: '480p', value: '480p' },
-			{ name: '720p', value: '720p' },
-			{ name: '1080p', value: '1080p' },
+			{
+				name: '参考生成',
+				value: 'reference_generation',
+				description: '根据参考素材生成新视频，可自由选择宽高比和时长',
+			},
+			{
+				name: '视频编辑',
+				value: 'video_edit',
+				description: '编辑参考视频，宽高比和时长由输入视频自动确定',
+			},
+			{
+				name: '视频延长',
+				value: 'video_extension',
+				description: '延长参考视频，宽高比由输入视频自动确定',
+			},
 		],
-		description: '生成视频分辨率。Seedance 2.0 支持 480p、720p 和 1080p',
+		description: '用于提前确定 Seedance 2.5 多模态任务的有效参数，不会发送给官方 API',
 		displayOptions: {
 			show: {
 				...createDisplayOptions.show,
-				model: ['doubao-seedance-2-0-260128'],
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['multimodal_reference'],
 			},
 		},
 	},
@@ -300,15 +349,40 @@ export const createOperationProperties: INodeProperties[] = [
 		name: 'resolution',
 		type: 'options',
 		default: '720p',
-		options: [
-			{ name: '480p', value: '480p' },
-			{ name: '720p', value: '720p' },
-		],
+		options: buildResolutionOptions(SEEDANCE_2_5_MODEL),
+		description: '生成视频分辨率。Seedance 2.5 支持 480p 和 720p',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+			},
+		},
+	},
+	{
+		displayName: '分辨率',
+		name: 'resolution',
+		type: 'options',
+		default: '720p',
+		options: buildResolutionOptions(SEEDANCE_2_0_MODEL),
+		description: '生成视频分辨率。Seedance 2.0 支持 480p、720p、1080p 和 4k',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_0_MODEL],
+			},
+		},
+	},
+	{
+		displayName: '分辨率',
+		name: 'resolution',
+		type: 'options',
+		default: '720p',
+		options: buildResolutionOptions(SEEDANCE_2_0_FAST_MODEL),
 		description: '生成视频分辨率。Seedance 2.0 Fast 支持 480p 和 720p',
 		displayOptions: {
 			show: {
 				...createDisplayOptions.show,
-				model: ['doubao-seedance-2-0-fast-260128'],
+				model: [SEEDANCE_2_0_FAST_MODEL],
 			},
 		},
 	},
@@ -317,47 +391,177 @@ export const createOperationProperties: INodeProperties[] = [
 		name: 'ratio',
 		type: 'options',
 		default: 'adaptive',
-		options: [
-			{ name: '1:1', value: '1:1' },
-			{ name: '16:9', value: '16:9' },
-			{ name: '21:9', value: '21:9' },
-			{ name: '3:4', value: '3:4' },
-			{ name: '4:3', value: '4:3' },
-			{ name: '9:16', value: '9:16' },
-			{ name: '自适应', value: 'adaptive' },
-		],
-		description: '生成视频宽高比。Seedance 2.0 系列默认推荐使用自适应',
-		displayOptions: createDisplayOptions,
+		options: ratioOptions,
+		description: '生成视频宽高比，默认使用自适应',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_0_MODEL, SEEDANCE_2_0_FAST_MODEL],
+			},
+		},
+	},
+	{
+		displayName: '宽高比',
+		name: 'ratio',
+		type: 'options',
+		default: 'adaptive',
+		options: ratioOptions,
+		description: '生成视频宽高比，默认使用自适应',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['t2v'],
+			},
+		},
+	},
+	{
+		displayName: '宽高比',
+		name: 'ratio',
+		type: 'options',
+		default: 'adaptive',
+		options: ratioOptions,
+		description: '参考生成可选择固定宽高比或自适应',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['multimodal_reference'],
+				multimodalTaskIntent: ['reference_generation'],
+			},
+		},
+	},
+	{
+		displayName: '宽高比',
+		name: 'forcedRatio',
+		type: 'options',
+		default: 'adaptive',
+		options: [{ name: '自适应（该任务要求）', value: 'adaptive' }],
+		description: '官方要求该任务使用自适应宽高比',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['i2v_first', 'i2v_first_last'],
+			},
+		},
+	},
+	{
+		displayName: '宽高比',
+		name: 'forcedRatio',
+		type: 'options',
+		default: 'adaptive',
+		options: [{ name: '自适应（该任务要求）', value: 'adaptive' }],
+		description: '官方要求视频编辑和视频延长任务使用自适应宽高比',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['multimodal_reference'],
+				multimodalTaskIntent: ['video_edit', 'video_extension'],
+			},
+		},
 	},
 	{
 		displayName: '视频时长',
 		name: 'duration',
 		type: 'options',
 		default: 5,
+		options: buildDurationOptions(SEEDANCE_2_0_MODEL),
+		description: '支持 4 到 15 秒，或由模型自动选择',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_0_MODEL, SEEDANCE_2_0_FAST_MODEL],
+			},
+		},
+	},
+	{
+		displayName: '视频时长',
+		name: 'duration',
+		type: 'options',
+		default: -1,
+		options: buildDurationOptions(SEEDANCE_2_5_MODEL),
+		description: '支持 4 到 30 秒，或由模型自动选择',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['t2v', 'i2v_first', 'i2v_first_last'],
+			},
+		},
+	},
+	{
+		displayName: '视频时长',
+		name: 'duration',
+		type: 'options',
+		default: -1,
+		options: buildDurationOptions(SEEDANCE_2_5_MODEL),
+		description: '支持 4 到 30 秒，或由模型自动选择',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['multimodal_reference'],
+				multimodalTaskIntent: ['reference_generation'],
+			},
+		},
+	},
+	{
+		displayName: '视频时长',
+		name: 'extensionDuration',
+		type: 'options',
+		default: -1,
+		options: buildDurationOptions(SEEDANCE_2_5_MODEL),
+		description: '视频延长默认使用自动，也可选择 4 到 30 秒。',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['multimodal_reference'],
+				multimodalTaskIntent: ['video_extension'],
+			},
+		},
+	},
+	{
+		displayName: '视频时长',
+		name: 'forcedDuration',
+		type: 'options',
+		default: -1,
+		options: [{ name: '自动（该任务要求）', value: -1 }],
+		description: '官方要求视频编辑任务由输入视频自动确定时长',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+				createMode: ['multimodal_reference'],
+				multimodalTaskIntent: ['video_edit'],
+			},
+		},
+	},
+	{
+		displayName: '输出格式',
+		name: 'outputFormat',
+		type: 'options',
+		default: 'mp4',
 		options: [
-			{ name: '4 秒', value: 4 },
-			{ name: '5 秒', value: 5 },
-			{ name: '6 秒', value: 6 },
-			{ name: '7 秒', value: 7 },
-			{ name: '8 秒', value: 8 },
-			{ name: '9 秒', value: 9 },
-			{ name: '10 秒', value: 10 },
-			{ name: '11 秒', value: 11 },
-			{ name: '12 秒', value: 12 },
-			{ name: '13 秒', value: 13 },
-			{ name: '14 秒', value: 14 },
-			{ name: '15 秒', value: 15 },
-			{ name: '自动选择', value: -1 },
+			{ name: 'MP4', value: 'mp4' },
+			{ name: 'MOV', value: 'mov' },
 		],
-		description: '生成视频时长。Seedance 2.0 系列支持 4 到 15 秒，或自动选择',
-		displayOptions: createDisplayOptions,
+		description: 'Seedance 2.5 支持 MP4 和适合专业后期处理的 MOV 格式',
+		displayOptions: {
+			show: {
+				...createDisplayOptions.show,
+				model: [SEEDANCE_2_5_MODEL],
+			},
+		},
 	},
 	{
 		displayName: '生成音频',
 		name: 'generateAudio',
 		type: 'boolean',
 		default: true,
-		description: 'Whether 生成音频。Seedance 2.0 系列支持有声或无声视频',
+		description: 'Whether 生成与画面同步的音频。Seedance 2.x 支持有声或无声视频',
 		displayOptions: createDisplayOptions,
 	},
 	{
@@ -368,13 +572,6 @@ export const createOperationProperties: INodeProperties[] = [
 		default: {},
 		displayOptions: createDisplayOptions,
 		options: [
-			{
-				displayName: '随机种子',
-				name: 'seed',
-				type: 'number',
-				default: -1,
-				description: '用于控制生成随机性的种子值。设置为 -1 时由模型随机生成',
-			},
 			{
 				displayName: '添加水印',
 				name: 'watermark',

@@ -54,9 +54,7 @@ function createVideoExecutionContext(
 					throw new Error(`Unexpected frame parameter read: ${name}`);
 				}
 
-				return Object.prototype.hasOwnProperty.call(parameters, name)
-					? parameters[name]
-					: fallback;
+				return Object.prototype.hasOwnProperty.call(parameters, name) ? parameters[name] : fallback;
 			},
 			getNode() {
 				return {
@@ -138,9 +136,7 @@ function assertNoMultimodalReferenceRoles(body: Record<string, unknown>) {
 }
 
 function contentRoles(body: Record<string, unknown>) {
-	return ((body.content as Array<Record<string, unknown>>) ?? []).map(
-		(contentItem) => contentItem.role,
-	);
+	return ((body.content as Array<Record<string, unknown>>) ?? []).map((contentItem) => contentItem.role);
 }
 
 function assertCreateTaskPost(call: Record<string, unknown>) {
@@ -270,7 +266,6 @@ test('old t2v execute payload ignores stale multimodal saved workflow fields', a
 		resolution: '720p',
 		ratio: '16:9',
 		duration: 5,
-		seed: -1,
 		watermark: false,
 		execution_expires_after: 172800,
 		return_last_frame: false,
@@ -321,7 +316,6 @@ test('old first-frame execute payload keeps first_frame and ignores stale multim
 		resolution: '720p',
 		ratio: '16:9',
 		duration: 5,
-		seed: -1,
 		watermark: false,
 		execution_expires_after: 172800,
 		return_last_frame: false,
@@ -330,7 +324,10 @@ test('old first-frame execute payload keeps first_frame and ignores stale multim
 	assertNoMultimodalReferenceRoles(body);
 	assert.deepEqual(contentRoles(body), [undefined, 'first_frame']);
 	assert.equal(requestedParameters.includes('referenceMaterials'), false);
-	assert.equal(requestedParameters.some((name) => name.startsWith('lastFrame')), false);
+	assert.equal(
+		requestedParameters.some((name) => name.startsWith('lastFrame')),
+		false,
+	);
 	assert.equal(result[0][0].json.taskId, 'task_123');
 });
 
@@ -380,7 +377,6 @@ test('old first-last-frame execute payload keeps frame roles and ignores stale m
 		resolution: '720p',
 		ratio: '16:9',
 		duration: 5,
-		seed: -1,
 		watermark: false,
 		execution_expires_after: 172800,
 		return_last_frame: false,
@@ -393,58 +389,59 @@ test('old first-last-frame execute payload keeps frame roles and ignores stale m
 });
 
 test('multimodal reference create executes with URL, asset, image binary and audio binary content', async () => {
-	const { calls, requestedParameters, assertedBinaryProperties, context } = createVideoExecutionContext({
-		generationMode: 'video',
-		operation: 'create',
-		createMode: 'multimodal_reference',
-		model: 'doubao-seedance-2-0-260128',
-		prompt: 'Use the references as style guidance',
-		referenceMaterials: {
-			items: [
-				{
-					materialType: 'image',
-					materialSource: 'url',
-					materialUrl: 'https://example.com/style.png',
-				},
-				{
-					materialType: 'video',
-					videoMaterialSource: 'asset',
-					materialUrl: 'https://example.com/stale-hidden-image-url.png',
-					videoAssetId: 'asset://video_asset',
-				},
-				{
-					materialType: 'image',
-					materialSource: 'binary',
-					binaryProperty: 'imageRef',
-				},
-				{
-					materialType: 'audio',
-					materialSource: 'binary',
-					binaryProperty: 'audioRef',
-				},
-			],
+	const { calls, requestedParameters, assertedBinaryProperties, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Use the references as style guidance',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'url',
+						materialUrl: 'https://example.com/style.png',
+					},
+					{
+						materialType: 'video',
+						videoMaterialSource: 'asset',
+						materialUrl: 'https://example.com/stale-hidden-image-url.png',
+						videoAssetId: 'asset://video_asset',
+					},
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						binaryProperty: 'imageRef',
+					},
+					{
+						materialType: 'audio',
+						materialSource: 'binary',
+						binaryProperty: 'audioRef',
+					},
+				],
+			},
+			resolution: '720p',
+			ratio: 'adaptive',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
 		},
-		resolution: '720p',
-		ratio: 'adaptive',
-		duration: 5,
-		generateAudio: false,
-		advancedOptions: {},
-	}, {
-		imageRef: {
-			mimeType: 'image/png',
-			data: 'image-bytes',
+		{
+			imageRef: {
+				mimeType: 'image/png',
+				data: 'image-bytes',
+			},
+			audioRef: {
+				mimeType: 'audio/wav',
+				data: 'audio-bytes',
+			},
 		},
-		audioRef: {
-			mimeType: 'audio/wav',
-			data: 'audio-bytes',
-		},
-	});
+	);
 
 	const result = await Seedance.prototype.execute.call(context);
 	const body = calls[0].body as Record<string, unknown>;
-	const contentRoles = ((body.content as Array<Record<string, unknown>>) ?? []).map(
-		(contentItem) => contentItem.role,
-	);
+	const contentRoles = ((body.content as Array<Record<string, unknown>>) ?? []).map((contentItem) => contentItem.role);
 	const outputJson = result[0][0].json as Record<string, unknown>;
 	const requestSummary = outputJson.requestSummary as Record<string, unknown>;
 
@@ -481,8 +478,14 @@ test('multimodal reference create executes with URL, asset, image binary and aud
 	assert.equal(contentRoles.includes('reference_image'), true);
 	assert.equal(contentRoles.includes('reference_video'), true);
 	assert.equal(contentRoles.includes('reference_audio'), true);
-	assert.equal(requestedParameters.some((name) => name.startsWith('firstFrame')), false);
-	assert.equal(requestedParameters.some((name) => name.startsWith('lastFrame')), false);
+	assert.equal(
+		requestedParameters.some((name) => name.startsWith('firstFrame')),
+		false,
+	);
+	assert.equal(
+		requestedParameters.some((name) => name.startsWith('lastFrame')),
+		false,
+	);
 	assert.deepEqual(assertedBinaryProperties, ['imageRef', 'audioRef']);
 	assert.deepEqual(requestSummary.referenceSummaries, [
 		{ index: 1, type: 'image', role: 'reference_image', source: 'url' },
@@ -535,31 +538,34 @@ test('multimodal reference create rejects empty active source values before HTTP
 });
 
 test('multimodal binary reference requires MIME type', async () => {
-	const { calls, context } = createVideoExecutionContext({
-		generationMode: 'video',
-		operation: 'create',
-		createMode: 'multimodal_reference',
-		model: 'doubao-seedance-2-0-260128',
-		prompt: 'Use the references as style guidance',
-		referenceMaterials: {
-			items: [
-				{
-					materialType: 'image',
-					materialSource: 'binary',
-					binaryProperty: 'imageRef',
-				},
-			],
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Use the references as style guidance',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						binaryProperty: 'imageRef',
+					},
+				],
+			},
+			resolution: '720p',
+			ratio: 'adaptive',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
 		},
-		resolution: '720p',
-		ratio: 'adaptive',
-		duration: 5,
-		generateAudio: false,
-		advancedOptions: {},
-	}, {
-		imageRef: {
-			data: 'image-bytes',
+		{
+			imageRef: {
+				data: 'image-bytes',
+			},
 		},
-	});
+	);
 
 	await assert.rejects(
 		() => Seedance.prototype.execute.call(context),
@@ -573,32 +579,35 @@ test('multimodal binary reference requires MIME type', async () => {
 });
 
 test('multimodal binary image rejects unsupported MIME before HTTP request', async () => {
-	const { calls, context } = createVideoExecutionContext({
-		generationMode: 'video',
-		operation: 'create',
-		createMode: 'multimodal_reference',
-		model: 'doubao-seedance-2-0-260128',
-		prompt: 'Use the references as style guidance',
-		referenceMaterials: {
-			items: [
-				{
-					materialType: 'image',
-					materialSource: 'binary',
-					binaryProperty: 'imageRef',
-				},
-			],
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Use the references as style guidance',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						binaryProperty: 'imageRef',
+					},
+				],
+			},
+			resolution: '720p',
+			ratio: 'adaptive',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
 		},
-		resolution: '720p',
-		ratio: 'adaptive',
-		duration: 5,
-		generateAudio: false,
-		advancedOptions: {},
-	}, {
-		imageRef: {
-			mimeType: 'application/pdf',
-			data: 'not-an-image',
+		{
+			imageRef: {
+				mimeType: 'application/pdf',
+				data: 'not-an-image',
+			},
 		},
-	});
+	);
 
 	await assert.rejects(
 		() => Seedance.prototype.execute.call(context),
@@ -612,32 +621,35 @@ test('multimodal binary image rejects unsupported MIME before HTTP request', asy
 });
 
 test('multimodal binary image rejects over-limit file before HTTP request', async () => {
-	const { calls, context } = createVideoExecutionContext({
-		generationMode: 'video',
-		operation: 'create',
-		createMode: 'multimodal_reference',
-		model: 'doubao-seedance-2-0-260128',
-		prompt: 'Use the references as style guidance',
-		referenceMaterials: {
-			items: [
-				{
-					materialType: 'image',
-					materialSource: 'binary',
-					binaryProperty: 'imageRef',
-				},
-			],
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Use the references as style guidance',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						binaryProperty: 'imageRef',
+					},
+				],
+			},
+			resolution: '720p',
+			ratio: 'adaptive',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
 		},
-		resolution: '720p',
-		ratio: 'adaptive',
-		duration: 5,
-		generateAudio: false,
-		advancedOptions: {},
-	}, {
-		imageRef: {
-			mimeType: 'image/png',
-			buffer: Buffer.alloc(31 * 1024 * 1024),
+		{
+			imageRef: {
+				mimeType: 'image/png',
+				buffer: Buffer.alloc(31 * 1024 * 1024),
+			},
 		},
-	});
+	);
 
 	await assert.rejects(
 		() => Seedance.prototype.execute.call(context),
@@ -652,43 +664,40 @@ test('multimodal binary image rejects over-limit file before HTTP request', asyn
 
 test('multimodal binary audio rejects unsupported MIME and over-limit file before HTTP request', async () => {
 	for (const [binary, expectedMessage] of [
-		[
-			{ mimeType: 'audio/ogg', data: 'not-wav-or-mp3' },
-			/参考音频 MIME 类型必须是 wav 或 mp3/,
-		],
-		[
-			{ mimeType: 'audio/wav', buffer: Buffer.alloc(16 * 1024 * 1024) },
-			/参考音频单段不能超过 15MB/,
-		],
+		[{ mimeType: 'audio/ogg', data: 'not-wav-or-mp3' }, /参考音频 MIME 类型必须是 wav 或 mp3/],
+		[{ mimeType: 'audio/wav', buffer: Buffer.alloc(16 * 1024 * 1024) }, /参考音频单段不能超过 15MB/],
 	] as const) {
-		const { calls, context } = createVideoExecutionContext({
-			generationMode: 'video',
-			operation: 'create',
-			createMode: 'multimodal_reference',
-			model: 'doubao-seedance-2-0-260128',
-			prompt: 'Use the references as style guidance',
-			referenceMaterials: {
-				items: [
-					{
-						materialType: 'image',
-						materialSource: 'url',
-						materialUrl: 'https://cdn.example.com/reference',
-					},
-					{
-						materialType: 'audio',
-						materialSource: 'binary',
-						binaryProperty: 'audioRef',
-					},
-				],
+		const { calls, context } = createVideoExecutionContext(
+			{
+				generationMode: 'video',
+				operation: 'create',
+				createMode: 'multimodal_reference',
+				model: 'doubao-seedance-2-0-260128',
+				prompt: 'Use the references as style guidance',
+				referenceMaterials: {
+					items: [
+						{
+							materialType: 'image',
+							materialSource: 'url',
+							materialUrl: 'https://cdn.example.com/reference',
+						},
+						{
+							materialType: 'audio',
+							materialSource: 'binary',
+							binaryProperty: 'audioRef',
+						},
+					],
+				},
+				resolution: '720p',
+				ratio: 'adaptive',
+				duration: 5,
+				generateAudio: false,
+				advancedOptions: {},
 			},
-			resolution: '720p',
-			ratio: 'adaptive',
-			duration: 5,
-			generateAudio: false,
-			advancedOptions: {},
-		}, {
-			audioRef: binary,
-		});
+			{
+				audioRef: binary,
+			},
+		);
 
 		await assert.rejects(
 			() => Seedance.prototype.execute.call(context),
@@ -704,41 +713,44 @@ test('multimodal binary audio rejects unsupported MIME and over-limit file befor
 
 test('multimodal locally computable request-size overflow fails before HTTP request', async () => {
 	const twentyFiveMb = Buffer.alloc(25 * 1024 * 1024);
-	const { calls, context } = createVideoExecutionContext({
-		generationMode: 'video',
-		operation: 'create',
-		createMode: 'multimodal_reference',
-		model: 'doubao-seedance-2-0-260128',
-		prompt: 'Use the references as style guidance',
-		referenceMaterials: {
-			items: [
-				{
-					materialType: 'image',
-					materialSource: 'binary',
-					binaryProperty: 'imageA',
-				},
-				{
-					materialType: 'image',
-					materialSource: 'binary',
-					binaryProperty: 'imageB',
-				},
-			],
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'multimodal_reference',
+			model: 'doubao-seedance-2-0-260128',
+			prompt: 'Use the references as style guidance',
+			referenceMaterials: {
+				items: [
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						binaryProperty: 'imageA',
+					},
+					{
+						materialType: 'image',
+						materialSource: 'binary',
+						binaryProperty: 'imageB',
+					},
+				],
+			},
+			resolution: '720p',
+			ratio: 'adaptive',
+			duration: 5,
+			generateAudio: false,
+			advancedOptions: {},
 		},
-		resolution: '720p',
-		ratio: 'adaptive',
-		duration: 5,
-		generateAudio: false,
-		advancedOptions: {},
-	}, {
-		imageA: {
-			mimeType: 'image/png',
-			buffer: twentyFiveMb,
+		{
+			imageA: {
+				mimeType: 'image/png',
+				buffer: twentyFiveMb,
+			},
+			imageB: {
+				mimeType: 'image/png',
+				buffer: twentyFiveMb,
+			},
 		},
-		imageB: {
-			mimeType: 'image/png',
-			buffer: twentyFiveMb,
-		},
-	});
+	);
 
 	await assert.rejects(
 		() => Seedance.prototype.execute.call(context),
@@ -792,7 +804,9 @@ test('extensionless signed URL and asset references reach create body without pr
 		{
 			type: 'image_url',
 			role: 'reference_image',
-			image_url: { url: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc' },
+			image_url: {
+				url: 'https://cdn.example.com/signed-image?X-Amz-Signature=abc',
+			},
 		},
 		{
 			type: 'audio_url',
@@ -833,7 +847,7 @@ test('execute-level create body uses official fields and excludes deferred optio
 	assert.equal(body.resolution, '1080p');
 	assert.equal(body.ratio, '16:9');
 	assert.equal(body.duration, 5);
-	assert.equal(body.seed, 11);
+	assert.equal('seed' in body, false);
 	assert.equal(body.watermark, true);
 	assert.equal(body.execution_expires_after, 7200);
 	assert.equal(body.return_last_frame, true);
@@ -847,6 +861,130 @@ test('execute-level create body uses official fields and excludes deferred optio
 	assert.equal(bodyJson.includes('web_search'), false);
 	assert.equal(bodyJson.includes('safety_identifier'), false);
 	assert.equal(bodyJson.includes('"tools"'), false);
+});
+
+test('new Seedance 2.5 text-to-video execution uses automatic defaults and MP4', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 't2v',
+		model: 'doubao-seedance-2-5-260628',
+		prompt: 'A sunrise over the city',
+		generateAudio: true,
+		advancedOptions: {},
+	});
+
+	const result = await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assertCreateTaskPost(calls[0]);
+	assert.equal(body.model, 'doubao-seedance-2-5-260628');
+	assert.equal(body.resolution, '720p');
+	assert.equal(body.ratio, 'adaptive');
+	assert.equal(body.duration, -1);
+	assert.equal(body.output_format, 'mp4');
+	assert.equal(result[0][0].json.taskId, 'task_123');
+});
+
+test('Seedance 2.5 first-frame execution normalizes stale fixed ratio to adaptive', async () => {
+	const { calls, context } = createVideoExecutionContext(
+		{
+			generationMode: 'video',
+			operation: 'create',
+			createMode: 'i2v_first',
+			model: 'doubao-seedance-2-5-260628',
+			prompt: 'Animate the frame',
+			firstFrameInputMethod: 'url',
+			firstFrameImageUrl: 'https://example.com/first.png',
+			resolution: '720p',
+			ratio: '16:9',
+			duration: 30,
+			outputFormat: 'mov',
+			generateAudio: false,
+			advancedOptions: {},
+		},
+		{},
+		{ forbidFrameParameterReads: false },
+	);
+
+	await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assert.equal(body.ratio, 'adaptive');
+	assert.equal(body.duration, 30);
+	assert.equal(body.output_format, 'mov');
+	assert.deepEqual(contentRoles(body), [undefined, 'first_frame']);
+});
+
+test('Seedance 2.5 video-edit intent locks ratio and duration before submission', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-5-260628',
+		multimodalTaskIntent: 'video_edit',
+		prompt: 'Edit the referenced video',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'video',
+					videoMaterialSource: 'url',
+					videoMaterialUrl: 'https://example.com/reference.mp4',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: '16:9',
+		duration: 12,
+		outputFormat: 'mov',
+		generateAudio: true,
+		advancedOptions: {},
+	});
+
+	const result = await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+	const summary = result[0][0].json.requestSummary as Record<string, unknown>;
+
+	assert.equal(body.ratio, 'adaptive');
+	assert.equal(body.duration, -1);
+	assert.equal(body.output_format, 'mov');
+	assert.equal('multimodalTaskIntent' in body, false);
+	assert.equal(summary.multimodalTaskIntent, 'video_edit');
+	assert.deepEqual(contentRoles(body), [undefined, 'reference_video']);
+});
+
+test('Seedance 2.5 video-extension intent starts from its independent automatic duration', async () => {
+	const { calls, context } = createVideoExecutionContext({
+		generationMode: 'video',
+		operation: 'create',
+		createMode: 'multimodal_reference',
+		model: 'doubao-seedance-2-5-260628',
+		multimodalTaskIntent: 'video_extension',
+		prompt: 'Extend the referenced video',
+		referenceMaterials: {
+			items: [
+				{
+					materialType: 'video',
+					videoMaterialSource: 'url',
+					videoMaterialUrl: 'https://example.com/reference.mp4',
+				},
+			],
+		},
+		resolution: '720p',
+		ratio: '16:9',
+		duration: 12,
+		extensionDuration: -1,
+		outputFormat: 'mp4',
+		generateAudio: true,
+		advancedOptions: {},
+	});
+
+	await Seedance.prototype.execute.call(context);
+	const body = calls[0].body as Record<string, unknown>;
+
+	assert.equal(body.ratio, 'adaptive');
+	assert.equal(body.duration, -1);
+	assert.deepEqual(contentRoles(body), [undefined, 'reference_video']);
 });
 
 test('list operation sends locked filters and returns one aggregated tasks item', async () => {
@@ -869,7 +1007,11 @@ test('list operation sends locked filters and returns one aggregated tasks item'
 			responses: [
 				{
 					items: [
-						{ id: 'task_a', status: 'succeeded', content: { video_url: 'https://example.com/a.mp4' } },
+						{
+							id: 'task_a',
+							status: 'succeeded',
+							content: { video_url: 'https://example.com/a.mp4' },
+						},
 						{ id: 'task_b', status: 'running' },
 					],
 				},
@@ -920,10 +1062,7 @@ test('delete operation sends locked path and returns success envelope', async ()
 
 	assert.equal(calls.length, 1);
 	assert.equal(calls[0].method, 'DELETE');
-	assert.match(
-		String(calls[0].url),
-		/\/api\/v3\/contents\/generations\/tasks\/task%20delete%2F123$/,
-	);
+	assert.match(String(calls[0].url), /\/api\/v3\/contents\/generations\/tasks\/task%20delete%2F123$/);
 	assert.deepEqual(output, {
 		success: true,
 		taskId: 'task delete/123',
@@ -939,14 +1078,7 @@ test('video polling and endpoint contracts stay stable', () => {
 	assert.equal(getSeedanceOperationEndpoint('getTask'), '/api/v3/contents/generations/tasks');
 	assert.equal(getSeedanceOperationEndpoint('listTasks'), '/api/v3/contents/generations/tasks');
 	assert.equal(getSeedanceDeleteTaskEndpoint('task_123'), '/api/v3/contents/generations/tasks/task_123');
-	assert.deepEqual(SEEDANCE_TASK_STATUSES, [
-		'queued',
-		'running',
-		'cancelled',
-		'succeeded',
-		'failed',
-		'expired',
-	]);
+	assert.deepEqual(SEEDANCE_TASK_STATUSES, ['queued', 'running', 'cancelled', 'succeeded', 'failed', 'expired']);
 });
 
 test('video download warning still keeps the explicit 24 hours message', () => {
